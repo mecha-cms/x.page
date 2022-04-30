@@ -128,9 +128,9 @@ class Page extends File {
 
     public function offsetSet($key, $value): void {
         if (isset($key)) {
-            $this->lot[$key] = $value;
+            $this->cache[$key] = $this->lot[$key] = $value;
         } else {
-            $this->lot[] = $value;
+            $this->cache[] = $this->lot[] = $value;
         }
     }
 
