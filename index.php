@@ -29,8 +29,6 @@ namespace {
         $folder . \D . '.page'
     ], 1);
     \State::set([
-        'are' => [],
-        'can' => [],
         'has' => [
             'page' => $is_home || $is_page,
             'pages' => !!$has_pages,
@@ -42,8 +40,7 @@ namespace {
             'home' => !!$is_home,
             'page' => $is_home || ($is_page && ($not_pages || !$has_pages)),
             'pages' => $has_pages && !$not_pages
-        ],
-        'not' => []
+        ]
     ]);
 }
 
