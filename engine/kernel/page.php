@@ -100,7 +100,7 @@ class Page extends File {
                 }
                 return ($this->lot[$key] = $v);
             }
-            // Stream page file content and make sure that property is exists before parsing
+            // Stream page file content and make sure that property exists before parsing
             $exist = 'content' === $key;
             foreach (stream($path) as $k => $v) {
                 if (0 === $k && YAML\SOH . "\n" !== $v) {
@@ -128,9 +128,11 @@ class Page extends File {
 
     public function offsetSet($key, $value): void {
         if (isset($key)) {
-            $this->cache[$key] = $this->lot[$key] = $value;
+            $this->lot[$key] = $value;
+            // Clear cache so that hook(s) can be executed again
+            unset($this->cache[$key]);
         } else {
-            $this->cache[] = $this->lot[] = $value;
+            $this->lot[] = $value;
         }
     }
 
