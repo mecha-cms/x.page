@@ -13,10 +13,9 @@ class Page extends File {
         if (array_key_exists($kin, $this->cache)) {
             return $this->cache[$kin];
         }
-        $v = $this->offsetGet($kin) ?? $this->lot[$kin] ?? null;
         $v = Hook::fire(map($this->c, static function($v) use($kin) {
             return $v .= '.' . $kin;
-        }), [$v, $lot], $this);
+        }), [$this->offsetGet($kin), $lot], $this);
         if ($lot && is_callable($v) && !is_string($v)) {
             $v = call_user_func($v, ...$lot);
         }
@@ -150,7 +149,7 @@ class Page extends File {
                 // `2017-04-21-14-25-00.page`
                 5 === substr_count($name, '-')
             ) &&
-            is_numeric(str_replace('-', "", $name)) &&
+            is_numeric(strtr($name, ['-' => ""])) &&
             preg_match('/^[1-9]\d{3,}-(0\d|1[0-2])-(0\d|[1-2]\d|3[0-1])(-([0-1]\d|2[0-4])(-([0-5]\d|60)){2})?$/', $name)
         ) {
             $time = new Time($name);
