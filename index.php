@@ -137,7 +137,7 @@ namespace x\page {
             }
             // Create pager for “pages” mode
             $pager = new \Pager\Pages($pages->get(), [$chunk, $i], (object) [
-                'link' => $url . '/' . $path
+                'link' => $url . '/' . ($path ?: $route)
             ]);
             // Disable parent link in root page
             if (!$path || false === \strpos($path, '/') && $i < 1) {
