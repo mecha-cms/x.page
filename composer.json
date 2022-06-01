@@ -5,5 +5,8 @@
   "require": {
     "mecha-cms/x.layout": "^2.0.0",
     "mecha-cms/x.y-a-m-l": "^2.0.0"
+  },
+  "suggest": {
+    "ext-mbstring": "It would be great if `ext-mbstring` is installed. We will use other ways if `ext-mbstring` is not available."
   }
 }
