@@ -87,9 +87,9 @@ namespace x\page {
             $folder . '.page'
         ], 1)) {
             $page = new \Page($file);
-            $pager = new \Pager\Page([], null, (object) [
+            $pager = new \Pager\Page([], null, new \Page(null, [
                 'link' => $path ? $url . "" : null
-            ]);
+            ]));
             $chunk = $page['chunk'] ?? 5;
             $deep = $page['deep'] ?? 0;
             $sort = $page['sort'] ?? [1, 'path'];
@@ -136,9 +136,9 @@ namespace x\page {
                 return ['page', [], 200];
             }
             // Create pager for “pages” mode
-            $pager = new \Pager\Pages($pages->get(), [$chunk, $i], (object) [
+            $pager = new \Pager\Pages($pages->get(), [$chunk, $i], new \Page(null, [
                 'link' => $url . '/' . ($path ?: $route)
-            ]);
+            ]));
             // Disable parent link in root page
             if (!$path || false === \strpos($path, '/') && $i < 1) {
                 $pager->parent = null;
