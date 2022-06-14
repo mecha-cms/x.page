@@ -23,12 +23,13 @@ class Page extends File {
     }
 
     public function __construct(string $path = null, array $lot = []) {
-        parent::__construct($path);
+        parent::__construct($path = $lot['path'] ?? $path);
         $this->cache = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
             $this->c[] = $v = c2f($v);
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.page', true), $lot);
         }
+        unset($this->lot['path']);
     }
 
     public function __get(string $key) {
