@@ -145,11 +145,13 @@ class Page extends File {
             return null;
         }
         $folder = dirname($this->path);
-        $path = exist([
+        if (!$path = exist([
             $folder . '.archive',
             $folder . '.page'
-        ], 1);
-        return $path ? new static($path, $lot) : null;
+        ], 1)) {
+            return null;
+        }
+        return new static($path, $lot);
     }
 
     public function time(string $format = null) {
