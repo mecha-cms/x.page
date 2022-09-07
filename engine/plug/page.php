@@ -1,6 +1,6 @@
 <?php
 
-From::_('page', function(string $value, $eval = false) {
+From::_('page', function (string $value, $eval = false) {
     if (0 !== strpos($value = n($value), YAML\SOH . "\n")) {
         // Add empty header
         $value = YAML\SOH . "\n" . YAML\EOT . "\n\n" . $value;
@@ -9,7 +9,7 @@ From::_('page', function(string $value, $eval = false) {
     return $v[0] + ['content' => $v["\t"] ?? null];
 });
 
-To::_('page', function(array $value) {
+To::_('page', function (array $value) {
     $content = $value['content'] ?? null;
     unset($value['content']);
     $value = [

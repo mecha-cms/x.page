@@ -180,7 +180,7 @@ namespace x\page {
         $GLOBALS['t'][] = i('Error');
         return ['page', [], 404];
     }
-    \Hook::set('route', function(...$lot) {
+    \Hook::set('route', function (...$lot) {
         return \Hook::fire('route.page', $lot);
     }, 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route", 100);

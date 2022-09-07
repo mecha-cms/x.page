@@ -13,7 +13,7 @@ class Page extends File {
         if (array_key_exists($kin, $this->cache)) {
             return $this->cache[$kin];
         }
-        $v = Hook::fire(map($this->c, static function($v) use($kin) {
+        $v = Hook::fire(map($this->c, static function ($v) use ($kin) {
             return $v .= '.' . $kin;
         }), [$this->offsetGet($kin), $lot], $this);
         if ($lot && is_callable($v) && !is_string($v)) {
