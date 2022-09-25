@@ -40,8 +40,8 @@ To::_('description', function (string $value = null, $max = 200) {
                     $open = array_pop($tags);
                     assert($open === $n); // Check that tag(s) are properly nested!
                     $out .= $tag;
-                // `<tag/>`
-                } else if ('/>' === substr($tag, -2) || preg_match('/^<(?:area|base|br|col|command|embed|hr|img|input|link|meta|param|source)(?=[\s>])/i', $tag)) {
+                // `<tag/>` or <https://www.w3.org/TR/2011/WD-html-markup-20110113/syntax.html#void-element>
+                } else if ('/>' === substr($tag, -2) || preg_match('/^<(?:area|base|br|col|command|embed|hr|img|input|keygen|link|meta|param|source|track|wbr)(?=[\s>])/i', $tag)) {
                     $out .= $tag;
                 // `<tag>`
                 } else {
