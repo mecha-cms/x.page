@@ -60,7 +60,7 @@ To::_('description', function (string $value = null, $max = 200) {
         while ($close = array_pop($tags)) {
             $out .= '</' . $close . '>';
         }
-        $out = trim(preg_replace('/\s*<br(\s[^>]*)?>\s*/', ' ', $out));
+        $out = trim(preg_replace('/\s*<br(?:\s(?:"[^"]*"|\'[^\']*\'|[^>])*)?>\s*/', ' ', $out));
         $value = trim(strip_tags($value));
         $count = $utf8 ? mb_strlen($value) : strlen($value);
         $out = trim($out) . ($count > $max[0] ? $max[1] : "");
