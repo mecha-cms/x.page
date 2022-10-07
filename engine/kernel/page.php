@@ -48,6 +48,10 @@ class Page extends File {
         $this->offsetUnset(p2f($key));
     }
 
+    public function _exist() {
+        return parent::exist();
+    }
+
     public function ID(...$lot) {
         $t = $this->time()->format('U');
         $id = $this->__call('id', $lot) ?? ($t ? sprintf('%u', $t) : null);
@@ -55,7 +59,7 @@ class Page extends File {
     }
 
     public function URL(...$lot) {
-        if ($path = $this->exist()) {
+        if ($path = $this->_exist()) {
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
             return $this->__call('url', $lot) ?? long(strtr(strtr($folder, [LOT . D . 'page' . D => '/']), D, '/'));
         }
@@ -66,9 +70,13 @@ class Page extends File {
         return $this->__call('content', $lot);
     }
 
+    public function exist() {
+        return $this->lot['exist'] ?? $this->_exist();
+    }
+
     public function getIterator(): \Traversable {
         $out = [];
-        if ($this->exist()) {
+        if ($this->_exist()) {
             $out = From::page(file_get_contents($path = $this->path), true);
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
             foreach (g($folder, 'data') as $k => $v) {
@@ -84,12 +92,12 @@ class Page extends File {
 
     #[\ReturnTypeWillChange]
     public function jsonSerialize() {
-        return $this->exist() ? From::page(file_get_contents($this->path), true) : [];
+        return $this->_exist() ? From::page(file_get_contents($this->path), true) : [];
     }
 
     #[\ReturnTypeWillChange]
     public function offsetGet($key) {
-        if ($this->exist()) {
+        if ($this->_exist()) {
             $path = $this->path;
             // Prioritize data from a file…
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
@@ -141,7 +149,7 @@ class Page extends File {
     }
 
     public function parent(array $lot = []) {
-        if (!$this->exist()) {
+        if (!$this->_exist()) {
             return null;
         }
         $folder = dirname($this->path);

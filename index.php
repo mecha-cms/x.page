@@ -51,14 +51,14 @@ namespace x\page {
     $GLOBALS['pages'] = new \Pages;
     function route($content, $path, $query, $hash) {
         // This conditional statement is not mandatory, but it is a good practice to be stated given that hook(s) are
-        // executed in order based on the `$stack` value. You could add a new route hook to overwrite the output of
-        // this hook which will be executed after this hook execution. But that is not efficient because this hook
-        // need(s) to be executed first, while the process inside it will not be used as it will be overwritten by
-        // your route hook later. To speed up the process, you need to set a higher `$stack` value to your route hook,
-        // so that it can be executed before this hook. Without this conditional statement, the output data of your
-        // previously executed hook will be overwritten by this hook. This conditional statement passes the value
-        // immediately if the previous hook value already contains the required response data (probably comes from the
-        // hook you added before this hook), so that all process(es) after this statement will not be executed.
+        // executed in order based on the `$stack` value. You could add a new route hook to overwrite the output of this
+        // hook which will be executed after this hook execution. But that is not efficient because this hook need(s) to
+        // be executed first, while the process inside it will not be used as it will be overwritten by your route hook
+        // later. To speed up the process, you need to set a higher `$stack` value to your route hook, so that it can be
+        // executed before this hook. Without this conditional statement, the output data of your previously executed
+        // hook will be overwritten by this hook. This conditional statement passes the value immediately if the
+        // previous hook value already contains the required response data (probably comes from the hook you added
+        // before this hook), so that all process(es) after this statement will not be executed.
         if (null !== $content) {
             return $content;
         }
