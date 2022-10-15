@@ -70,8 +70,8 @@ class Page extends File {
         return $this->__call('content', $lot);
     }
 
-    public function exist() {
-        return $this->lot['exist'] ?? $this->_exist();
+    public function exist(...$lot) {
+        return $this->__call('exist', $lot) ?? $this->_exist();
     }
 
     public function getIterator(): \Traversable {
@@ -93,6 +93,10 @@ class Page extends File {
     #[\ReturnTypeWillChange]
     public function jsonSerialize() {
         return $this->_exist() ? From::page(file_get_contents($this->path), true) : [];
+    }
+
+    public function name(...$lot) {
+        return $this->__call('name', $lot) ?? parent::name(...$lot);
     }
 
     #[\ReturnTypeWillChange]
