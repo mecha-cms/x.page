@@ -71,7 +71,7 @@ class Page extends File {
     }
 
     public function exist(...$lot) {
-        return $this->__call('exist', $lot) ?? $this->_exist();
+        return $this->lot['exist'] ?? $this->_exist(...$lot);
     }
 
     public function getIterator(): \Traversable {
@@ -96,7 +96,7 @@ class Page extends File {
     }
 
     public function name(...$lot) {
-        return $this->__call('name', $lot) ?? parent::name(...$lot);
+        return $this->lot['name'] ?? parent::name(...$lot);
     }
 
     #[\ReturnTypeWillChange]
