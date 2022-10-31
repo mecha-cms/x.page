@@ -5,7 +5,7 @@ To::_('description', function (string $value = null, $max = 200) {
     // becomes `asdf. asdf` and not `asdf.asdf`.
     $r = 'address|article|blockquote|details|div|d[dt]|figure|(?:fig)?caption|footer|h(?:[1-6]|eader|r)|li|main|nav|p(?:re)?|section|summary|t[dh]';
     $value = preg_replace(['/\s+/', '/\s*(<\/(?:' . $r . ')>)\s*/i'], [' ', '$1 '], $value ?? "");
-    $value = strip_tags($value, '<a><abbr><b><br><cite><code><del><dfn><em><i><ins><kbd><mark><q><small><span><strong><sub><sup><time><u><var>');
+    $value = strip_tags($value, ['a', 'abbr', 'b', 'br', 'cite', 'code', 'del', 'dfn', 'em', 'i', 'ins', 'kbd', 'mark', 'q', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var']);
     if (is_int($max)) {
         $max = [$max, '&#x2026;'];
     }
@@ -15,7 +15,7 @@ To::_('description', function (string $value = null, $max = 200) {
         $out = "";
         $done = $i = 0;
         $tags = [];
-        while ($done < $max[0] && preg_match('/<(?:\/[a-z\d:.-]+|[a-z\d:.-]+(?:\s[^>]*)?)>|&(?:[a-z\d]+|#\d+|#x[a-f\d]+);|[\x80-\xFF][\x80-\xBF]*/i', $value, $m, PREG_OFFSET_CAPTURE, $i)) {
+        while ($done < $max[0] && preg_match('/<(?:\/[a-z\d:.-]+|[a-z\d:.-]+(?:\s(?:"[^"]*"|\'[^\']*\'|[^>])*)?)>|&(?:[a-z\d]+|#\d+|#x[a-f\d]+);|[\x80-\xFF][\x80-\xBF]*/i', $value, $m, PREG_OFFSET_CAPTURE, $i)) {
             $tag = $m[0][0];
             $pos = $m[0][1];
             $str = substr($value, $i, $pos - $i);
@@ -34,7 +34,7 @@ To::_('description', function (string $value = null, $max = 200) {
                 ++$done;
             } else {
                 // `tag`
-                $n = trim(strtok($m[0][0], "\n\r\t "), '<>/');
+                $n = trim(strtok($tag, "\n\r\t "), '<>/');
                 // `</tag>`
                 if ('/' === $tag[1]) {
                     $open = array_pop($tags);
