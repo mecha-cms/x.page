@@ -1,56 +1,85 @@
 <?php
 
-abstract class Pager extends Genome {
+class Pager extends File {
 
-    const next = '&#x25B6;';
-    const parent = '&#x25C6;';
-    const prev = '&#x25C0;';
+    protected $lot;
 
-    public $base;
-
-    public $next;
-    public $parent;
-    public $prev;
-
-    public function __construct() {
-        $this->base = $GLOBALS['url'];
+    public function __construct(string $path = null, array $lot = []) {
+        $this->lot = $lot;
+        parent::__construct($path = $this->lot['path'] ?? $path);
+        if ($path && is_string($path) && 0 === strpos($path, PATH)) {
+            if (is_dir($path)) {
+                extract($GLOBALS, EXTR_SKIP);
+                $route = trim(strtr($this->lot['route'] ?? "", D, '/'), '/');
+                $route = "" !== $route ? '/' . $route : "";
+                if ($file = exist([
+                    $path . '.archive',
+                    $path . '.page'
+                ], 1)) {
+                    $page = $this->page($file, $lot);
+                    $pages = $this->pages($path, 'page', $page->deep);
+                    if ($sort = $page->sort) {
+                        $pages->sort($sort);
+                    }
+                    if ($chunk = $page->chunk) {
+                        $pages = $pages->chunk($chunk);
+                    }
+                    $part = $this->lot['part'] ?? 0;
+                    if ($part > 0) {
+                        if ($pages->get($part - 1)) {
+                            $this->lot['current'] = $this->page(null, ['link' => $url . $route . '/' . $part]);
+                        }
+                        if ($pages->get($part - 2)) {
+                            $this->lot['prev'] = $this->page(null, ['link' => $url . $route . '/' . ($part - 1)]);
+                        }
+                        if ($pages->get($part)) {
+                            $this->lot['next'] = $this->page(null, ['link' => $url . $route . '/' . ($part + 1)]);
+                        }
+                        $this->lot['parent'] = $page;
+                    }
+                }
+            } else if (is_file($path)) {
+                $folder = dirname($path);
+                if ($file = exist([
+                    $folder . '.archive',
+                    $folder . '.page'
+                ], 1)) {
+                    $page = $this->page($file);
+                    $pages = $this->pages($folder, 'page', $page->deep);
+                    if ($sort = $page->sort) {
+                        $pages->sort($sort);
+                    }
+                    $current = $pages->index($path);
+                    if (null !== $current) {
+                        $this->lot['current'] = $this->page($path);
+                        if ($next = $pages->get($current + 1)) {
+                            $this->lot['next'] = $this->page($next);
+                        }
+                        if ($prev = $pages->get($current - 1)) {
+                            $this->lot['prev'] = $this->page($prev);
+                        }
+                    }
+                    $this->lot['parent'] = $page;
+                }
+            }
+        }
+        unset($this->lot['path']);
     }
 
-    public function __toString() {
-        return $this->prev(self::prev) . ' ' . $this->parent(self::parent) . ' ' . $this->next(self::next);
+    public function __get(string $key) {
+        return $this->lot[$key] ?? null;
     }
 
-    public function next(string $text = null) {
-        $url = $this->base;
-        if ($next = $this->next->link ?? $this->next->url ?? null) {
-            $next .= $url->query . $url->hash;
-        }
-        if (isset($text)) {
-            return null !== $next ? '<a href="' . htmlspecialchars($next) . '" rel="next">' . $text . '</a>' : '<a aria-disabled="true" rel="next">' . $text . '</a>';
-        }
-        return $next;
+    public function __set(string $key, $value) {
+        $this->lot[$key] = $value;
     }
 
-    public function parent(string $text = null) {
-        $url = $this->base;
-        if ($parent = $this->parent->link ?? $this->parent->url ?? null) {
-            $parent .= $url->query . $url->hash;
-        }
-        if (isset($text)) {
-            return null !== $parent ? '<a href="' . htmlspecialchars($parent) . '">' . $text . '</a>' : '<a aria-disabled="true">' . $text . '</a>';
-        }
-        return $parent;
+    public function page(...$lot) {
+        return Page::from(...$lot);
     }
 
-    public function prev(string $text = null) {
-        $url = $this->base;
-        if ($prev = $this->prev->link ?? $this->prev->url ?? null) {
-            $prev .= $url->query . $url->hash;
-        }
-        if (isset($text)) {
-            return null !== $prev ? '<a href="' . htmlspecialchars($prev) . '" rel="prev">' . $text . '</a>' : '<a aria-disabled="true" rel="prev">' . $text . '</a>';
-        }
-        return $prev;
+    public function pages(...$lot) {
+        return Pages::from(...$lot);
     }
 
 }

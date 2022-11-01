@@ -67,19 +67,19 @@ namespace x\page {
         $route = \trim($state->route ?? "", '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
         if ($path && \preg_match('/^(.*?)\/([1-9]\d*)$/', $path, $m)) {
-            [$any, $path, $i] = $m;
+            [$any, $path, $part] = $m;
             if (\exist([
                 $folder . '.archive',
                 $folder . '.page'
             ], 1)) {
-                $path .= '/' . $i;
-                unset($i);
+                $path .= '/' . $part;
+                unset($part);
             } else {
                 $folder = \dirname($folder);
             }
         }
-        $i = ((int) ($i ?? 1)) - 1;
-        if ($i < 1 && $route === $path && !$query) {
+        $part = ((int) ($part ?? 1)) - 1;
+        if ($part < 1 && $route === $path && !$query) {
             \kick('/'); // Redirect to home page
         }
         if ($file = \exist([
@@ -87,9 +87,7 @@ namespace x\page {
             $folder . '.page'
         ], 1)) {
             $page = new \Page($file);
-            $pager = new \Pager\Page([], null, new \Page(null, [
-                'link' => $path ? $url . "" : null
-            ]));
+            $pager = new \Pager($file);
             $chunk = $page['chunk'] ?? 5;
             $deep = $page['deep'] ?? 0;
             $sort = $page['sort'] ?? [1, 'path'];
@@ -103,47 +101,22 @@ namespace x\page {
                 'deep' => $deep, // Inherit current page’s `deep` property
                 'sort' => $sort // Inherit current page’s `sort` property
             ]);
-            if ($parent_file = \exist([
-                $parent_folder . '.archive', // `.\lot\page\parent-name.archive`
-                $parent_folder . '.page', // `.\lot\page\parent-name.page`
-                $parent_folder . \D . '.archive', // `.\lot\page\parent-name\.archive`
-                $parent_folder . \D . '.page' // `.\lot\page\parent-name\.page`
-            ], 1)) {
-                $parent_page = new \Page($parent_file);
-                $parent_deep = $parent_page['deep'] ?? 0;
-                $parent_sort = $parent_page['sort'] ?? [1, 'path'];
-                $parent_pages = \Pages::from($parent_folder, 'page', $parent_deep)->sort($parent_sort);
-                $pager = new \Pager\Page($parent_pages->get(), $page->path, $parent_page);
-                $GLOBALS['pager'] = $pager;
-                $GLOBALS['pages'] = $parent_pages;
-                \State::set([
-                    'has' => [
-                        'next' => !!$pager->next,
-                        'page' => true,
-                        'pages' => false,
-                        'parent' => !!$pager->parent,
-                        'prev' => !!$pager->prev
-                    ],
-                    'is' => [
-                        'page' => true,
-                        'pages' => false
-                    ]
-                ]);
-            }
             $pages = \Pages::from($folder, 'page', $deep)->sort($sort); // (all)
             // No page(s) means “page” mode
             if (0 === $pages->count() || \is_file($folder . \D . '.' . $page->x)) {
                 return ['page', [], 200];
             }
             // Create pager for “pages” mode
-            $pager = new \Pager\Pages($pages->get(), [$chunk, $i], new \Page(null, [
-                'link' => $url . '/' . ($path ?: $route)
-            ]));
+			$pager = new \Pager($folder, [
+				'part' => $part + 1,
+				'route' => $path
+			]);
             // Disable parent link in root page
-            if (!$path || false === \strpos($path, '/') && $i < 1) {
+            if (!$path) {
+				// TODO
                 $pager->parent = null;
             }
-            $pages = $pages->chunk($chunk, $i); // (chunked)
+            $pages = $pages->chunk($chunk, $part); // (chunked)
             $GLOBALS['page'] = $page;
             $GLOBALS['pager'] = $pager;
             $GLOBALS['pages'] = $pages;
@@ -156,12 +129,12 @@ namespace x\page {
                     'prev' => !!$pager->prev
                 ],
                 'is' => [
-                    'error' => $pages->count ? false : 404,
+                    'error' => $pages->count() ? false : 404,
                     'page' => false,
                     'pages' => true
                 ]
             ]);
-            return ['pages', [], $pages->count ? 200 : 404];
+            return ['pages', [], $pages->count() ? 200 : 404];
         }
         \State::set([
             'has' => [

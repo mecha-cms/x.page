@@ -17,13 +17,13 @@ class Pages extends Anemone {
         return $this->page($value);
     }
 
-    public function page(string $path = null, array $lot = []) {
-        return new Page($path, $lot);
+    public function page(...$lot) {
+        return Page::from(...$lot);
     }
 
-    public function sort($sort = 1, $preserve_key = false) {
+    public function sort($sort = 1, $keys = false) {
         if (count($value = $this->value) <= 1) {
-            if (!$preserve_key) {
+            if (!$keys) {
                 $this->value = array_values($this->value);
             }
             return $this;
@@ -43,7 +43,7 @@ class Pages extends Anemone {
             $this->value = array_keys($value);
         } else {
             $value = $this->value;
-            if ($preserve_key) {
+            if ($keys) {
                 -1 === $sort ? arsort($value) : asort($value);
             } else {
                 -1 === $sort ? rsort($value) : sort($value);
