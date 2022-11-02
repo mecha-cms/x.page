@@ -118,6 +118,7 @@ namespace x\page {
                     'page' => true,
                     'pages' => true,
                     'parent' => !!$pager->parent,
+                    'part' => !!($part + 1),
                     'prev' => !!$pager->prev
                 ],
                 'is' => [
