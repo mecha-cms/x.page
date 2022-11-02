@@ -47,7 +47,7 @@ namespace {
 namespace x\page {
     // Initialize response variable(s)
     $GLOBALS['page'] = new \Page;
-    $GLOBALS['pager'] = new \Pager\Pages;
+    $GLOBALS['pager'] = new \Pager;
     $GLOBALS['pages'] = new \Pages;
     function route($content, $path, $query, $hash) {
         // This conditional statement is not mandatory, but it is a good practice to be stated given that hook(s) are
@@ -91,8 +91,6 @@ namespace x\page {
             $chunk = $page['chunk'] ?? 5;
             $deep = $page['deep'] ?? 0;
             $sort = $page['sort'] ?? [1, 'path'];
-            $parent_path = \dirname($path);
-            $parent_folder = \dirname($folder);
             $GLOBALS['page'] = $page;
             $GLOBALS['pager'] = $pager;
             $GLOBALS['t'][] = $page->title;
@@ -108,14 +106,8 @@ namespace x\page {
             }
             // Create pager for “pages” mode
 			$pager = new \Pager($folder, [
-				'part' => $part + 1,
-				'route' => $path
+				'part' => $part + 1
 			]);
-            // Disable parent link in root page
-            if (!$path) {
-				// TODO
-                $pager->parent = null;
-            }
             $pages = $pages->chunk($chunk, $part); // (chunked)
             $GLOBALS['page'] = $page;
             $GLOBALS['pager'] = $pager;

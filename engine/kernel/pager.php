@@ -10,7 +10,7 @@ class Pager extends File {
         if ($path && is_string($path) && 0 === strpos($path, PATH)) {
             if (is_dir($path)) {
                 extract($GLOBALS, EXTR_SKIP);
-                $route = trim(strtr($this->lot['route'] ?? "", D, '/'), '/');
+                $route = trim(strtr($this->lot['route'] ?? strtr($path, [LOT . D . 'page' . D => ""]), D, '/'), '/');
                 $route = "" !== $route ? '/' . $route : "";
                 if ($file = exist([
                     $path . '.archive',
@@ -35,7 +35,6 @@ class Pager extends File {
                         if ($pages->get($part)) {
                             $this->lot['next'] = $this->page(null, ['link' => $url . $route . '/' . ($part + 1)]);
                         }
-                        $this->lot['parent'] = $page;
                     }
                 }
             } else if (is_file($path)) {
@@ -59,7 +58,6 @@ class Pager extends File {
                             $this->lot['prev'] = $this->page($prev);
                         }
                     }
-                    $this->lot['parent'] = $page;
                 }
             }
         }
