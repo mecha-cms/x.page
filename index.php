@@ -87,12 +87,19 @@ namespace x\page {
             $folder . '.page'
         ], 1)) {
             $page = new \Page($file);
-            $pager = new \Pager($file);
-            $chunk = $page['chunk'] ?? 5;
-            $deep = $page['deep'] ?? 0;
-            $sort = $page['sort'] ?? [1, 'path'];
+            $chunk = $page->chunk ?? 5;
+            $deep = $page->deep ?? 0;
+            $sort = $page->sort ?? [1, 'path'];
+            if ($page_parent = $page->parent) {
+                $chunk_parent = $page_parent->chunk ?? 5;
+                $deep_parent = $page_parent->deep ?? 0;
+                $sort_parent = $page_parent->sort ?? [1, 'path'];
+                $folder_parent = \dirname($folder);
+                $pages_parent = \Pages::from($folder_parent, 'page', $deep_parent)->sort($sort_parent);
+                $pager = \Pager::from($pages_parent, $url . '/' . $path)->chunk($chunk_parent, $part);
+                $GLOBALS['pager'] = $pager;
+            }
             $GLOBALS['page'] = $page;
-            $GLOBALS['pager'] = $pager;
             $GLOBALS['t'][] = $page->title;
             \State::set([
                 'chunk' => $chunk, // Inherit current page’s `chunk` property
@@ -104,10 +111,7 @@ namespace x\page {
             if (0 === $pages->count() || \is_file($folder . \D . '.' . $page->x)) {
                 return ['page', [], 200];
             }
-            // Create pager for “pages” mode
-			$pager = new \Pager($folder, [
-				'part' => $part + 1
-			]);
+            $pager = \Pager::from($pages, $url . '/' . $path)->chunk($chunk, $part);
             $pages = $pages->chunk($chunk, $part); // (chunked)
             $GLOBALS['page'] = $page;
             $GLOBALS['pager'] = $pager;

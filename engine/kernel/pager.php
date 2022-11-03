@@ -1,83 +1,82 @@
 <?php
 
-class Pager extends File {
+class Pager extends Anemone {
 
-    protected $lot;
+    protected $base;
+    protected $chunk;
+    protected $part;
 
-    public function __construct(string $path = null, array $lot = []) {
-        $this->lot = $lot;
-        parent::__construct($path = $this->lot['path'] ?? $path);
-        if ($path && is_string($path) && 0 === strpos($path, PATH)) {
-            if (is_dir($path)) {
-                extract($GLOBALS, EXTR_SKIP);
-                $route = trim(strtr($this->lot['route'] ?? strtr($path, [LOT . D . 'page' . D => ""]), D, '/'), '/');
-                $route = "" !== $route ? '/' . $route : "";
-                if ($file = exist([
-                    $path . '.archive',
-                    $path . '.page'
-                ], 1)) {
-                    $page = $this->page($file, $lot);
-                    $pages = $this->pages($path, 'page', $page->deep);
-                    if ($sort = $page->sort) {
-                        $pages->sort($sort);
-                    }
-                    if ($chunk = $page->chunk) {
-                        $pages = $pages->chunk($chunk);
-                    }
-                    $part = $this->lot['part'] ?? 0;
-                    if ($part > 0) {
-                        if ($pages->get($part - 1)) {
-                            $this->lot['current'] = $this->page(null, ['link' => $url . $route . '/' . $part]);
-                        }
-                        if ($pages->get($part - 2)) {
-                            $this->lot['prev'] = $this->page(null, ['link' => $url . $route . '/' . ($part - 1)]);
-                        }
-                        if ($pages->get($part)) {
-                            $this->lot['next'] = $this->page(null, ['link' => $url . $route . '/' . ($part + 1)]);
-                        }
-                    }
+    protected function _link(int $part) {
+        return $this->base . '/' . $part;
+    }
+
+    public function __construct(iterable $value = [], string $join = ', ') {
+        $out = [];
+        $page = $this->page();
+        foreach ($value as $k => $v) {
+            if (is_object($v)) {
+                if (!is_a($v, get_class($page))) {
+                    continue;
                 }
-            } else if (is_file($path)) {
-                $folder = dirname($path);
-                if ($file = exist([
-                    $folder . '.archive',
-                    $folder . '.page'
-                ], 1)) {
-                    $page = $this->page($file);
-                    $pages = $this->pages($folder, 'page', $page->deep);
-                    if ($sort = $page->sort) {
-                        $pages->sort($sort);
-                    }
-                    $current = $pages->index($path);
-                    if (null !== $current) {
-                        $this->lot['current'] = $this->page($path);
-                        if ($next = $pages->get($current + 1)) {
-                            $this->lot['next'] = $this->page($next);
-                        }
-                        if ($prev = $pages->get($current - 1)) {
-                            $this->lot['prev'] = $this->page($prev);
-                        }
-                    }
-                }
+                $out[$k] = $v->path;
+            } else if ($v && is_string($v) && is_file($v)) {
+                $out[$k] = $v;
             }
         }
-        unset($this->lot['path']);
+        unset($value);
+        $this->chunk = 5;
+        $this->part = -1;
+        parent::__construct(array_filter($out), $join);
     }
 
-    public function __get(string $key) {
-        return $this->lot[$key] ?? null;
+    public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
+        $that = parent::chunk($chunk, $part, $keys);
+        $that->chunk = $chunk;
+        $that->part = $part;
+        return $that;
     }
 
-    public function __set(string $key, $value) {
-        $this->lot[$key] = $value;
+    public function current() {
+        if ($this->value) {
+            return $this->page(null, ['link' => $this->_link($this->part + 1)]);
+        }
+        return null;
+    }
+
+    public function mitose() {
+        $that = parent::mitose();
+        $that->base = $this->base;
+        return $that;
+    }
+
+    public function next() {
+        $chunk = $this->chunk;
+        $part = $this->part;
+        if ($part >= ceil(count($this->lot) / $chunk) - 1) {
+            return null;
+        }
+        return $this->page(null, ['link' => $this->_link($part + 2)]);
     }
 
     public function page(...$lot) {
         return Page::from(...$lot);
     }
 
-    public function pages(...$lot) {
-        return Pages::from(...$lot);
+    public function prev() {
+        $chunk = $this->chunk;
+        $part = $this->part;
+        if ($part <= 0) {
+            return null;
+        }
+        return $this->page(null, ['link' => $this->_link($part)]);
+    }
+
+    public static function from(...$lot) {
+        $value = array_shift($lot) ?? [];
+        $base = array_shift($lot) ?? null;
+        $pager = new static($value);
+        $pager->base = $base;
+        return $pager;
     }
 
 }
