@@ -63,7 +63,7 @@ class Pager extends Anemone {
             return null;
         }
         return $this->page(null, [
-            'description' => i('Go to the next page.'),
+            'description' => i('Go to the next page!'),
             'link' => $this->to($part + 1),
             'title' => i('Next')
         ]);
@@ -80,7 +80,7 @@ class Pager extends Anemone {
             return null;
         }
         return $this->page(null, [
-            'description' => i('Go to the previous page.'),
+            'description' => i('Go to the previous page!'),
             'link' => $this->to($part - 1),
             'title' => i('Previous')
         ]);
@@ -88,9 +88,9 @@ class Pager extends Anemone {
 
     public function to(int $part) {
         $base = trim($this->base ?? "", '/');
-        $hash = trim($this->hash ?? "");
+        $hash = trim($this->hash ?? "", '#');
         $path = trim($this->path ?? "", '/');
-        $query = trim($this->query ?? "");
+        $query = trim($this->query ?? "", '?');
         return $base . ("" !== $path ? '/' . $path : "") . ($part > 0 ? '/' . $part : "") . ("" !== $query ? '?' . $query : "") . ("" !== $hash ? '#' . $hash : "");
     }
 
