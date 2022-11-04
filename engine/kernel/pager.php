@@ -2,13 +2,12 @@
 
 class Pager extends Anemone {
 
-    protected $base;
-    protected $chunk;
-    protected $part;
-
-    protected function _link(int $part) {
-        return $this->base . '/' . $part;
-    }
+    public $base;
+    public $chunk;
+    public $hash;
+    public $part; // 1–based index
+    public $path;
+    public $query;
 
     public function __construct(iterable $value = [], string $join = ', ') {
         $out = [];
@@ -24,13 +23,15 @@ class Pager extends Anemone {
             }
         }
         unset($value);
+        $this->base = $GLOBALS['url'] ?? '/';
         $this->chunk = 5;
-        $this->part = -1;
+        $this->part = 0;
         parent::__construct(array_filter($out), $join);
     }
 
-    public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
-        $that = parent::chunk($chunk, $part, $keys);
+    // Unlike the parent class, `Anemone`, this class uses 1–based index
+    public function chunk(int $chunk = 5, int $part = 0, $keys = false) {
+        $that = parent::chunk($chunk, $part - 1, $keys);
         $that->chunk = $chunk;
         $that->part = $part;
         return $that;
@@ -38,24 +39,34 @@ class Pager extends Anemone {
 
     public function current() {
         if ($this->value) {
-            return $this->page(null, ['link' => $this->_link($this->part + 1)]);
+            return $this->page(null, [
+                'description' => i('This is the current page.'),
+                'link' => $this->to($this->part),
+                'title' => i('Current')
+            ]);
         }
         return null;
     }
 
     public function mitose() {
         $that = parent::mitose();
-        $that->base = $this->base;
+        foreach (['base', 'chunk', 'hash', 'part', 'path', 'query'] as $k) {
+            $that->{$k} = $this->{$k};
+        }
         return $that;
     }
 
     public function next() {
         $chunk = $this->chunk;
         $part = $this->part;
-        if ($part >= ceil(count($this->lot) / $chunk) - 1) {
+        if ($part >= ceil(count($this->lot) / $chunk)) {
             return null;
         }
-        return $this->page(null, ['link' => $this->_link($part + 2)]);
+        return $this->page(null, [
+            'description' => i('Go to the next page.'),
+            'link' => $this->to($part + 1),
+            'title' => i('Next')
+        ]);
     }
 
     public function page(...$lot) {
@@ -65,18 +76,22 @@ class Pager extends Anemone {
     public function prev() {
         $chunk = $this->chunk;
         $part = $this->part;
-        if ($part <= 0) {
+        if ($part <= 1) {
             return null;
         }
-        return $this->page(null, ['link' => $this->_link($part)]);
+        return $this->page(null, [
+            'description' => i('Go to the previous page.'),
+            'link' => $this->to($part - 1),
+            'title' => i('Previous')
+        ]);
     }
 
-    public static function from(...$lot) {
-        $value = array_shift($lot) ?? [];
-        $base = array_shift($lot) ?? null;
-        $pager = new static($value);
-        $pager->base = $base;
-        return $pager;
+    public function to(int $part) {
+        $base = trim($this->base ?? "", '/');
+        $hash = trim($this->hash ?? "");
+        $path = trim($this->path ?? "", '/');
+        $query = trim($this->query ?? "");
+        return $base . ("" !== $path ? '/' . $path : "") . ($part > 0 ? '/' . $part : "") . ("" !== $query ? '?' . $query : "") . ("" !== $hash ? '#' . $hash : "");
     }
 
 }

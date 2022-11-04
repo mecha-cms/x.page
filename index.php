@@ -96,7 +96,10 @@ namespace x\page {
                 $sort_parent = $page_parent->sort ?? [1, 'path'];
                 $folder_parent = \dirname($folder);
                 $pages_parent = \Pages::from($folder_parent, 'page', $deep_parent)->sort($sort_parent);
-                $pager = \Pager::from($pages_parent, $url . '/' . $path)->chunk($chunk_parent, $part);
+                $pager = \Pager::from($pages_parent)->chunk($chunk_parent, $part + 1);
+                $pager->hash = $hash;
+                $pager->path = $path;
+                $pager->query = $query;
                 $GLOBALS['pager'] = $pager;
             }
             $GLOBALS['page'] = $page;
@@ -111,7 +114,10 @@ namespace x\page {
             if (0 === $pages->count() || \is_file($folder . \D . '.' . $page->x)) {
                 return ['page', [], 200];
             }
-            $pager = \Pager::from($pages, $url . '/' . $path)->chunk($chunk, $part);
+            $pager = \Pager::from($pages)->chunk($chunk, $part + 1);
+            $pager->hash = $hash;
+            $pager->path = $path;
+            $pager->query = $query;
             $pages = $pages->chunk($chunk, $part); // (chunked)
             $GLOBALS['page'] = $page;
             $GLOBALS['pager'] = $pager;
@@ -121,7 +127,7 @@ namespace x\page {
                     'next' => !!$pager->next,
                     'page' => true,
                     'pages' => true,
-                    'parent' => !!$pager->parent,
+                    'parent' => !!$page_parent,
                     'part' => !!($part + 1),
                     'prev' => !!$pager->prev
                 ],
