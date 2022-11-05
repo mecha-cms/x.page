@@ -2,12 +2,9 @@
 
 class Pager extends Anemone {
 
-    public $base;
     public $chunk;
-    public $hash;
+    public $link;
     public $part; // 1–based index
-    public $path;
-    public $query;
 
     public function __construct(iterable $value = [], string $join = ', ') {
         $out = [];
@@ -23,10 +20,25 @@ class Pager extends Anemone {
             }
         }
         unset($value);
-        $this->base = $GLOBALS['url'] ?? '/';
         $this->chunk = 5;
+        $this->link = new URL($GLOBALS['url'] ?? '/');
         $this->part = 0;
         parent::__construct(array_filter($out), $join);
+    }
+
+    public function __get(string $key) {
+        if (method_exists($this, $key) && (new \ReflectionMethod($this, $key))->isPublic()) {
+            return $this->{$key}();
+        }
+        return $this->link->{$key} ?? null;
+    }
+
+    public function __isset(string $key) {
+        return null !== $this->__get($key);
+    }
+
+    public function __set(string $key, $value) {
+        $this->link->{$key} = $value;
     }
 
     // Unlike the parent class, `Anemone`, this class uses 1–based index

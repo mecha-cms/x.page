@@ -156,6 +156,12 @@ class Page extends File {
         if (!$this->_exist()) {
             return null;
         }
+        if ($path = $this['parent']) {
+            if (!is_string($path) || !is_file($path)) {
+                return null;
+            }
+            return new static($path, $lot);
+        }
         $folder = dirname($this->path);
         if (!$path = exist([
             $folder . '.archive',
