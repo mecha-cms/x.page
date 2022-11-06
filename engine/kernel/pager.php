@@ -20,7 +20,7 @@ class Pager extends Anemone {
             }
         }
         unset($value);
-        $this->chunk = 5;
+        $this->chunk = 0;
         $this->link = new URL($GLOBALS['url'] ?? '/');
         $this->part = 0;
         parent::__construct(array_filter($out), $join);
@@ -62,7 +62,7 @@ class Pager extends Anemone {
 
     public function mitose() {
         $that = parent::mitose();
-        foreach (['base', 'chunk', 'hash', 'part', 'path', 'query'] as $k) {
+        foreach (['chunk', 'link', 'part'] as $k) {
             $that->{$k} = $this->{$k};
         }
         return $that;
@@ -98,12 +98,16 @@ class Pager extends Anemone {
         ]);
     }
 
+    public function previous(...$lot) {
+        return $this->prev(...$lot);
+    }
+
     public function to(int $part) {
-        $base = trim($this->base ?? "", '/');
-        $hash = trim($this->hash ?? "", '#');
-        $path = trim($this->path ?? "", '/');
-        $query = trim($this->query ?? "", '?');
-        return $base . ("" !== $path ? '/' . $path : "") . ($part > 0 ? '/' . $part : "") . ("" !== $query ? '?' . $query : "") . ("" !== $hash ? '#' . $hash : "");
+        $base = $this->link ?? "";
+        $hash = $this->hash ?? "";
+        $path = $this->path ?? "";
+        $query = $this->query ?? "";
+        return $base . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
     }
 
 }
