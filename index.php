@@ -90,18 +90,6 @@ namespace x\page {
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
             $sort = $page->sort ?? [1, 'path'];
-            if ($page_parent = $page->parent) {
-                $chunk_parent = $page_parent->chunk ?? 5;
-                $deep_parent = $page_parent->deep ?? 0;
-                $sort_parent = $page_parent->sort ?? [1, 'path'];
-                $folder_parent = \dirname($folder);
-                $pages_parent = \Pages::from($folder_parent, 'page', $deep_parent)->sort($sort_parent);
-                $pager = \Pager::from($pages_parent)->chunk($chunk_parent, $part + 1);
-                $pager->hash = $hash;
-                $pager->path = $path;
-                $pager->query = $query;
-                $GLOBALS['pager'] = $pager;
-            }
             $GLOBALS['page'] = $page;
             $GLOBALS['t'][] = $page->title;
             \State::set([
@@ -127,7 +115,7 @@ namespace x\page {
                     'next' => !!$pager->next,
                     'page' => true,
                     'pages' => true,
-                    'parent' => !!$page_parent,
+                    'parent' => !!$page->parent,
                     'part' => !!($part + 1),
                     'prev' => !!$pager->prev
                 ],
