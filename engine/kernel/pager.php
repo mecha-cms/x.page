@@ -4,7 +4,7 @@ class Pager extends Anemone {
 
     public $chunk;
     public $link;
-    public $part; // 1–based index
+    public $part;
 
     public function __construct(iterable $value = [], string $join = ', ') {
         $out = [];
@@ -41,9 +41,8 @@ class Pager extends Anemone {
         $this->link->{$key} = $value;
     }
 
-    // Unlike the parent class, `Anemone`, this class uses 1–based index
-    public function chunk(int $chunk = 5, int $part = 0, $keys = false) {
-        $that = parent::chunk($chunk, $part - 1, $keys);
+    public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
+        $that = parent::chunk($chunk, $part, $keys);
         $that->chunk = $chunk;
         $that->part = $part;
         return $that;
@@ -52,8 +51,8 @@ class Pager extends Anemone {
     public function current() {
         if ($this->value) {
             return $this->page(null, [
-                'description' => i('This is the current page.'),
-                'link' => $this->to($this->part),
+                'description' => i('You are here.'),
+                'link' => $this->to($this->part + 1),
                 'title' => i('Current')
             ]);
         }
@@ -71,12 +70,12 @@ class Pager extends Anemone {
     public function next() {
         $chunk = $this->chunk;
         $part = $this->part;
-        if ($part >= ceil(count($this->lot) / $chunk)) {
+        if ($part >= ceil(count($this->lot) / $chunk) - 1) {
             return null;
         }
         return $this->page(null, [
             'description' => i('Go to the next page!'),
-            'link' => $this->to($part + 1),
+            'link' => $this->to($part + 2),
             'title' => i('Next')
         ]);
     }
@@ -88,12 +87,12 @@ class Pager extends Anemone {
     public function prev() {
         $chunk = $this->chunk;
         $part = $this->part;
-        if ($part <= 1) {
+        if ($part <= 0) {
             return null;
         }
         return $this->page(null, [
             'description' => i('Go to the previous page!'),
-            'link' => $this->to($part - 1),
+            'link' => $this->to($part),
             'title' => i('Previous')
         ]);
     }
@@ -103,11 +102,11 @@ class Pager extends Anemone {
     }
 
     public function to(int $part) {
-        $base = $this->link ?? "";
         $hash = $this->hash ?? "";
+        $link = $this->link ?? "";
         $path = $this->path ?? "";
         $query = $this->query ?? "";
-        return $base . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
+        return $link . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
     }
 
 }

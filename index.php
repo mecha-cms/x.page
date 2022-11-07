@@ -102,7 +102,7 @@ namespace x\page {
             if (0 === $pages->count() || \is_file($folder . \D . '.' . $page->x)) {
                 return ['page', [], 200];
             }
-            $pager = \Pager::from($pages)->chunk($chunk, $part + 1);
+            $pager = \Pager::from($pages)->chunk($chunk, $part);
             $pager->hash = $hash;
             $pager->path = $path;
             $pager->query = $query;
