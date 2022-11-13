@@ -74,7 +74,7 @@ class Page extends File {
         return $this->lot['exist'] ?? $this->_exist(...$lot);
     }
 
-    public function getIterator(): \Traversable {
+    public function getIterator(): Traversable {
         $out = [];
         if ($this->_exist()) {
             $out = From::page(file_get_contents($path = $this->path), true);
@@ -87,10 +87,10 @@ class Page extends File {
                 $out[basename($k, '.data')] = $v;
             }
         }
-        return new \ArrayIterator($out);
+        return new ArrayIterator($out);
     }
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize() {
         return $this->_exist() ? From::page(file_get_contents($this->path), true) : [];
     }
@@ -99,7 +99,7 @@ class Page extends File {
         return $this->lot['name'] ?? parent::name(...$lot);
     }
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function offsetGet($key) {
         if ($this->_exist()) {
             $path = $this->path;

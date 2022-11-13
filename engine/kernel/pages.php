@@ -2,13 +2,13 @@
 
 class Pages extends Anemone {
 
-    public function getIterator(): \Traversable {
+    public function getIterator(): Traversable {
         foreach ($this->value as $k => $v) {
             yield $k => is_array($v) ? $this->page(null, $v) : $this->page($v);
         }
     }
 
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function offsetGet($key) {
         $value = parent::offsetGet($key);
         if (is_array($value)) {

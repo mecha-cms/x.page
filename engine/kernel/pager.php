@@ -27,7 +27,7 @@ class Pager extends Anemone {
     }
 
     public function __get(string $key) {
-        if (method_exists($this, $key) && (new \ReflectionMethod($this, $key))->isPublic()) {
+        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
         return $this->link->{$key} ?? null;

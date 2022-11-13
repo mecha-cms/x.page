@@ -1,11 +1,66 @@
 <?php
 
-To::_('description', function (string $value = null, $max = 200) {
+To::_('description', static function (string $value = null, $max = 200) {
+    $value = strip_tags(preg_replace(['/\s+/', '/\s*(<\/(?:' . implode('|', [
+        'address',
+        'article',
+        'blockquote',
+        'dd',
+        'details',
+        'div',
+        'dt',
+        'figcaption',
+        'figure',
+        'footer',
+        'h1',
+        'h2',
+        'h3',
+        'h4',
+        'h5',
+        'h6',
+        'header',
+        'hr',
+        'li',
+        'main',
+        'nav',
+        'p',
+        'pre',
+        'section',
+        'summary',
+        'td',
+        'th'
     // Make sure to add space at the end of the block tag(s) that will be removed. To make `<p>asdf.</p><p>asdf</p>`
     // becomes `asdf. asdf` and not `asdf.asdf`.
-    $r = 'address|article|blockquote|details|div|d[dt]|figure|(?:fig)?caption|footer|h(?:[1-6]|eader|r)|li|main|nav|p(?:re)?|section|summary|t[dh]';
-    $value = preg_replace(['/\s+/', '/\s*(<\/(?:' . $r . ')>)\s*/i'], [' ', '$1 '], $value ?? "");
-    $value = strip_tags($value, ['a', 'abbr', 'b', 'br', 'cite', 'code', 'del', 'dfn', 'em', 'i', 'ins', 'kbd', 'mark', 'q', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var']);
+    ]) . ')>)\s*/i'], [' ', '$1 '], $value ?? ""), [
+        'a',
+        'abbr',
+        'b',
+        'bdi',
+        'bdo',
+        'br',
+        'cite',
+        'code',
+        'data',
+        'del',
+        'dfn',
+        'em',
+        'i',
+        'ins',
+        'kbd',
+        'mark',
+        'q',
+        's',
+        'samp',
+        'small',
+        'span',
+        'strong',
+        'sub',
+        'sup',
+        'time',
+        'u',
+        'var',
+        'wbr'
+    ]);
     if (is_int($max)) {
         $max = [$max, '&#x2026;'];
     }
@@ -72,7 +127,7 @@ To::_('description', function (string $value = null, $max = 200) {
     return "" !== $out ? $out : null;
 });
 
-To::_('sentence', function (string $value = null, string $tail = '.') {
+To::_('sentence', static function (string $value = null, string $tail = '.') {
     $value = trim($value ?? "");
     if (extension_loaded('mbstring')) {
         return mb_strtoupper(mb_substr($value, 0, 1)) . mb_strtolower(mb_substr($value, 1)) . $tail;
@@ -80,7 +135,7 @@ To::_('sentence', function (string $value = null, string $tail = '.') {
     return ucfirst(strtolower($value)) . $tail;
 });
 
-To::_('title', function (string $value = null) {
+To::_('title', static function (string $value = null) {
     $value = w($value ?? "");
     $out = extension_loaded('mbstring') ? mb_convert_case($value, MB_CASE_TITLE) : ucwords($value);
     // Convert to abbreviation if all case(s) are in upper
