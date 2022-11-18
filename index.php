@@ -95,6 +95,7 @@ namespace x\page {
             \State::set([
                 'chunk' => $chunk, // Inherit current page’s `chunk` property
                 'deep' => $deep, // Inherit current page’s `deep` property
+                'part' => $part + 1,
                 'sort' => $sort // Inherit current page’s `sort` property
             ]);
             $pages = \Pages::from($folder, 'page', $deep)->sort($sort); // (all)
