@@ -1,6 +1,6 @@
 <?php
 
-class Pager extends Anemone {
+class Pager extends Pages {
 
     public $chunk;
     public $link;
@@ -23,14 +23,14 @@ class Pager extends Anemone {
         $this->chunk = 0;
         $this->link = new URL($GLOBALS['url'] ?? '/');
         $this->part = 0;
-        parent::__construct(array_filter($out), $join);
+        parent::__construct($out, $join);
     }
 
     public function __get(string $key) {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
-        return $this->link->{$key} ?? null;
+        return $this->link->{$key} ?? parent::__get($key);
     }
 
     public function __isset(string $key) {
@@ -78,10 +78,6 @@ class Pager extends Anemone {
             'link' => $this->to($part + 2),
             'title' => i('Next')
         ]);
-    }
-
-    public function page(...$lot) {
-        return Page::from(...$lot);
     }
 
     public function prev() {
