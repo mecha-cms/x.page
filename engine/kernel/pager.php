@@ -30,7 +30,7 @@ class Pager extends Pages {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
-        return $this->link->{$key} ?? parent::__get($key);
+        return $this->link->{$key};
     }
 
     public function __isset(string $key) {
