@@ -91,10 +91,14 @@ class Pages extends Anemone {
             return $this;
         }
         if (is_array($sort)) {
-            $value = [];
+            $lot = $value = [];
             if (isset($sort[1])) {
-                foreach ($this->value as $k) {
-                    $f = is_array($k) ? $this->page(null, $k) : $this->page($k);
+                foreach ($this->value as $k => $v) {
+                    $f = is_array($v) ? $this->page(null, $v) : $this->page($v);
+                    if (is_array($v)) {
+                        $lot[$f->path] = $v;
+                        $lot[$f->path]['key'] = $k;
+                    }
                     if (is_string($v = $f[$sort[1]] ?? $f->{$sort[1]} ?? $sort[2] ?? null)) {
                         $v = strip_tags($v); // Ignore HTML tag(s)
                     }
@@ -102,7 +106,19 @@ class Pages extends Anemone {
                 }
             }
             -1 === $sort[0] ? arsort($value) : asort($value);
-            $this->value = array_keys($value);
+            foreach (array_keys($value) as $v) {
+                if (empty($lot[$v])) {
+                    $this->value[] = $v;
+                    continue;
+                }
+                $lot[$v]['path'] = $v;
+                $k = $lot[$v]['key'] ?? null;
+                if ($keys && isset($k)) {
+                    $this->value[$k] = $lot[$v];
+                } else {
+                    $this->value[] = $lot[$v];
+                }
+            }
         } else {
             $value = $this->value;
             if ($keys) {
