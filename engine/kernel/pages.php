@@ -106,6 +106,7 @@ class Pages extends Anemone {
                 }
             }
             -1 === $sort[0] ? arsort($value) : asort($value);
+            $this->value = [];
             foreach (array_keys($value) as $v) {
                 if (empty($lot[$v])) {
                     $this->value[] = $v;
