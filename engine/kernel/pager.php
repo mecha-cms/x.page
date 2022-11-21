@@ -74,7 +74,7 @@ class Pager extends Pages {
             return null;
         }
         return $this->page(null, [
-            'description' => i('Go to the next page!'),
+            'description' => i('Go to the next page.'),
             'link' => $this->to($part + 2),
             'title' => i('Next')
         ]);
@@ -87,7 +87,7 @@ class Pager extends Pages {
             return null;
         }
         return $this->page(null, [
-            'description' => i('Go to the previous page!'),
+            'description' => i('Go to the previous page.'),
             'link' => $this->to($part),
             'title' => i('Previous')
         ]);
@@ -103,6 +103,10 @@ class Pager extends Pages {
         $path = $this->path ?? "";
         $query = $this->query ?? "";
         return $link . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
+    }
+
+    public static function from(...$lot) {
+        return new static(...$lot);
     }
 
 }

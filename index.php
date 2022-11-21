@@ -90,27 +90,26 @@ namespace x\page {
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
             $sort = $page->sort ?? [1, 'path'];
+            $pages = \Pages::from($folder, 'page', $deep)->sort($sort);
             $GLOBALS['page'] = $page;
             $GLOBALS['t'][] = $page->title;
             \State::set([
                 'chunk' => $chunk, // Inherit current page’s `chunk` property
+                'count' => $count = $pages->count, // Return the total number of page(s)
                 'deep' => $deep, // Inherit current page’s `deep` property
                 'part' => $part + 1,
                 'sort' => $sort // Inherit current page’s `sort` property
             ]);
-            $pages = \Pages::from($folder, 'page', $deep)->sort($sort); // (all)
             // No page(s) means “page” mode
-            if (0 === $pages->count() || \is_file($folder . \D . '.' . $page->x)) {
+            if (0 === $count || \is_file($folder . \D . '.' . $page->x)) {
                 return ['page', [], 200];
             }
-            $pager = \Pager::from($pages)->chunk($chunk, $part);
+            $pager = \Pager::from($pages);
             $pager->hash = $hash;
             $pager->path = $path;
             $pager->query = $query;
-            $pages = $pages->chunk($chunk, $part); // (chunked)
-            $GLOBALS['page'] = $page;
-            $GLOBALS['pager'] = $pager;
-            $GLOBALS['pages'] = $pages;
+            $GLOBALS['pager'] = $pager = $pager->chunk($chunk, $part);
+            $GLOBALS['pages'] = $pages = $pages->chunk($chunk, $part);
             \State::set([
                 'has' => [
                     'next' => !!$pager->next,
@@ -121,12 +120,12 @@ namespace x\page {
                     'prev' => !!$pager->prev
                 ],
                 'is' => [
-                    'error' => $pages->count() ? false : 404,
+                    'error' => $count ? false : 404,
                     'page' => false,
                     'pages' => true
                 ]
             ]);
-            return ['pages', [], $pages->count() ? 200 : 404];
+            return ['pages', [], $count ? 200 : 404];
         }
         \State::set([
             'has' => [
