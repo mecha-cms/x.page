@@ -110,6 +110,7 @@ namespace x\page {
             $pager->query = $query;
             $GLOBALS['pager'] = $pager = $pager->chunk($chunk, $part);
             $GLOBALS['pages'] = $pages = $pages->chunk($chunk, $part);
+            $count = $pages->count; // Total number of page(s) after chunk
             \State::set([
                 'has' => [
                     'next' => !!$pager->next,
