@@ -64,7 +64,7 @@ namespace x\page {
         }
         \extract($GLOBALS, \EXTR_SKIP);
         $path = \trim($path ?? "", '/');
-        $route = \trim($state->route ?? "", '/');
+        $route = \trim($state->route ?? 'index', '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
         if ($path && \preg_match('/^(.*?)\/([1-9]\d*)$/', $path, $m)) {
             [$any, $path, $part] = $m;
