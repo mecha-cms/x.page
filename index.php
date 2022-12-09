@@ -5,7 +5,7 @@ namespace {
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
     $path = \trim($url->path ?? "", '/');
-    $route = \trim($state->route ?? "", '/');
+    $route = \trim($state->route ?? 'index', '/');
     $folder = \LOT . \D . 'page' . \D . (\preg_replace('/\/[1-9]\d*$/', "", $path) ?: $route);
     $parent = \dirname($folder);
     $has_pages = \q(\g($folder, 'page'));
