@@ -1,5 +1,5 @@
 {
-  "description": "Convert file and folder structure into web pages.",
+  "description": "Converts file and folder structure into web pages.",
   "license": "GPL-3.0-or-later",
   "name": "mecha-cms/x.page",
   "require": {
