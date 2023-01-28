@@ -1,6 +1,6 @@
 <?php
 
-From::_('page', static function (string $value, $eval = false) {
+From::_('page', static function (?string $value, $eval = false) {
     if (!$value) {
         return [];
     }
@@ -12,9 +12,9 @@ From::_('page', static function (string $value, $eval = false) {
     return $v[0] + ['content' => $v["\t"] ?? null];
 });
 
-To::_('page', static function (array $value) {
+To::_('page', static function (?array $value) {
     if (!$value) {
-        return "";
+        return null;
     }
     $content = $value['content'] ?? null;
     unset($value['content']);
