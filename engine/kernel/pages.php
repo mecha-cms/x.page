@@ -2,6 +2,12 @@
 
 class Pages extends Anemone {
 
+    public function getIterator(): Traversable {
+        foreach ($this->value as $k => $v) {
+            yield $k => is_array($v) ? $this->page(null, $v) : $this->page($v);
+        }
+    }
+
     public function find($fn) {
         $fn = is_callable($fn) ? Closure::fromCallable($fn)->bindTo($this) : $fn;
         return find($this->value, function ($v, $k) {
@@ -14,12 +20,6 @@ class Pages extends Anemone {
             return is_array($first) ? $this->page(null, $first) : $this->page($first);
         }
         return $first;
-    }
-
-    public function getIterator(): Traversable {
-        foreach ($this->value as $k => $v) {
-            yield $k => is_array($v) ? $this->page(null, $v) : $this->page($v);
-        }
     }
 
     public function is($fn, $keys = false) {
@@ -99,7 +99,7 @@ class Pages extends Anemone {
                         $lot[$f->path] = $v;
                         $lot[$f->path]['key'] = $k;
                     }
-                    if (is_string($v = $f[$sort[1]] ?? $f->{$sort[1]} ?? null)) {
+                    if (is_string($v = $f[$sort[1]] ?? $f->{$sort[1]} ?? $sort[2] ?? null)) {
                         $v = strip_tags($v); // Ignore HTML tag(s)
                     }
                     $value[$f->path] = $v;
