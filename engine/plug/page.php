@@ -24,7 +24,3 @@ To::_('page', static function (?array $value) {
     ];
     return To::YAML($value, '  ', true);
 });
-
-function page(...$lot) {
-    return Page::from(...$lot);
-}

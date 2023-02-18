@@ -1,7 +1,12 @@
 <?php
 
 namespace {
-    require __DIR__ . \D . 'engine' . \D . 'plug' . \D . 'to.php';
+    function page(...$lot) {
+        return \Page::from(...$lot);
+    }
+    function pages(...$lot) {
+        return \Pages::from(...$lot);
+    }
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
     $path = \trim($url->path ?? "", '/');
