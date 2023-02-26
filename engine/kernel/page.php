@@ -10,8 +10,9 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        if (array_key_exists($kin, $this->cache)) {
-            return $this->cache[$kin];
+        $hash = $lot ? z($lot) : "";
+        if (array_key_exists($kin . $hash, $this->cache)) {
+            return $this->cache[$kin . $hash];
         }
         $v = Hook::fire(map($this->c, static function ($v) use ($kin) {
             return $v .= '.' . $kin;
@@ -19,7 +20,7 @@ class Page extends File {
         if ($lot && is_callable($v) && !is_string($v)) {
             $v = call_user_func($v, ...$lot);
         }
-        return ($this->cache[$kin] = $v);
+        return ($this->cache[$kin . $hash] = $v);
     }
 
     public function __construct(string $path = null, array $lot = []) {
