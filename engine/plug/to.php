@@ -130,6 +130,19 @@ To::_('description', static function (?string $value, $max = 200): ?string {
     return "" !== $out ? $out : null;
 });
 
+To::_('page', static function (?array $value) {
+    if (!$value) {
+        return null;
+    }
+    $content = $value['content'] ?? null;
+    unset($value['content']);
+    $value = [
+        0 => $value,
+        "\t" => $content
+    ];
+    return To::YAML($value, '  ', "\t");
+});
+
 To::_('sentence', static function (?string $value, string $tail = '.'): ?string {
     if ("" === ($value = trim($value ?? ""))) {
         return null;
