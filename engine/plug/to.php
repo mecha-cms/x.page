@@ -140,16 +140,6 @@ To::_('page', static function (?array $value): ?string {
     return To::YAML($value, '  ', P);
 });
 
-To::_('sentence', static function (?string $value, string $tail = '.'): ?string {
-    if ("" === ($value = trim($value ?? ""))) {
-        return null;
-    }
-    if (extension_loaded('mbstring')) {
-        return mb_strtoupper(mb_substr($value, 0, 1)) . mb_strtolower(mb_substr($value, 1)) . $tail;
-    }
-    return ucfirst(strtolower($value)) . $tail;
-});
-
 To::_('title', static function (?string $value): ?string {
     $value = w($value ?? "");
     $out = extension_loaded('mbstring') ? mb_convert_case($value, MB_CASE_TITLE) : ucwords($value);
