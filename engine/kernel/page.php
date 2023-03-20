@@ -124,8 +124,9 @@ class Page extends File {
                 }
                 if (
                     0 === strpos($v, $key . ':') ||
-                    0 === strpos($v, '"' . strtr($key, ['"' => '\\"']) . '":') ||
-                    0 === strpos($v, "'" . strtr($key, ["'" => "\\'"]) . "':")
+                    0 === strpos($v, '"' . strtr($key, ['"' => '\"']) . '":') ||
+                    0 === strpos($v, "'" . strtr($key, ["'" => "\\'"]) . "':") ||
+                    0 === strpos($v, '{') && preg_match('/^\{\s*(?:"' . x(strtr($key, ['"' => '\"'])) . '"|\'' . x(strtr($key, ["'" => "\\'"])) . '\'|' . x($key) . ')\s*:/', $v)
                 ) {
                     $exist = true;
                     break;
