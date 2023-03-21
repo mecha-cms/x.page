@@ -113,21 +113,42 @@ class Page extends File {
                 }
                 return ($this->lot[$key] = $v);
             }
-            // Stream page file content and make sure that property exists before parsing
-            $exist = 'content' === $key;
+            if ('content' === $key) {
+                $content = n(file_get_contents($path));
+                if (YAML\SOH === strtok($content, " \n\t#")) {
+                    $content = trim(explode("\n" . YAML\EOT . "\n", $content . "\n", 2)[1] ?? "", "\n");
+                } else {
+                    $content = trim($content, "\n");
+                }
+                return ($this->lot[$key] = "" !== $content ? $content : null);
+            }
+            // Stream page file content and make sure that the property exists before parsing
+            $exist = false;
             foreach (stream($path) as $k => $v) {
-                if (0 === $k && YAML\SOH . "\n" !== $v) {
+                // No `---\n` part at the start of the stream means no page header at all
+                if (0 === $k && (YAML\SOH . "\n" !== $v || YAML\SOH !== strtok($v, " \n\t#"))) {
                     break;
                 }
+                // Has reached the `...\n` part in the stream means the end of the page header
                 if (YAML\EOT . "\n" === $v) {
                     break;
                 }
-                if (
-                    0 === strpos($v, $key . ':') ||
-                    0 === strpos($v, '"' . strtr($key, ['"' => '\"']) . '":') ||
-                    0 === strpos($v, "'" . strtr($key, ["'" => "\\'"]) . "':") ||
-                    0 === strpos($v, '{') && preg_match('/^\{\s*(?:"' . x(strtr($key, ['"' => '\"'])) . '"|\'' . x(strtr($key, ["'" => "\\'"])) . '\'|' . x($key) . ')\s*:/', $v)
-                ) {
+                // Test for `{ asdf: asdf }` part in the stream
+                if ($v && '{' === $v[0]) {
+                    $v = trim(substr(trim(strtok($v, " \n\t#")), 1, -1));
+                }
+                // Test for `"asdf": asdf` part in the stream
+                if ($v && '"' === $v[0] && preg_match('/^"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v)) {
+                    $exist = true;
+                    break;
+                }
+                // Test for `'asdf': asdf` part in the stream
+                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "\\'"])) . "'\s*:/", $v)) {
+                    $exist = true;
+                    break;
+                }
+                // Test for `asdf: asdf` part in the stream
+                if ($v && $key === strtok($v, " \n\t:")) {
                     $exist = true;
                     break;
                 }
