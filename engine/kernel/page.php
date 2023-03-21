@@ -135,7 +135,7 @@ class Page extends File {
                 }
                 // Test for `{ asdf: asdf }` part in the stream
                 if ($v && '{' === $v[0]) {
-                    $v = trim(substr(trim(strtok($v, " \n\t#")), 1, -1));
+                    $v = trim(substr(trim(strtok($v, '#')), 1, -1));
                 }
                 // Test for `"asdf": asdf` part in the stream
                 if ($v && '"' === $v[0] && preg_match('/^"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v)) {
