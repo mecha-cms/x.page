@@ -6,10 +6,6 @@ color: '#75522f'
 author: Taufik Nurrohman
 type: Markdown
 version: 3.0.0
-
-use:
-  '.\lot\x\layout': 1
-  '.\lot\x\y-a-m-l': 1
 ...
 
 This extension activates the basic features of a website by utilizing the structure of the page file placement in the
