@@ -41,7 +41,7 @@ class Page extends File {
         $this->offsetSet(p2f($key), $value);
     }
 
-    public function __toString() {
+    public function __toString(): string {
         return To::page($this->lot ?? []);
     }
 
