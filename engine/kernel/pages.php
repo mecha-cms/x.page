@@ -90,7 +90,12 @@ class Pages extends Anemone {
             }
             return $this;
         }
-        if (is_array($sort)) {
+        if (is_callable($sort)) {
+            $fn = (function ($a, $b) use ($sort) {
+                return fire($sort, [is_array($a) ? $this->page(null, $a) : $this->page($a), is_array($b) ? $this->page(null, $b) : $this->page($b)], $this);
+            })->bindTo($this);
+            $keys ? uasort($value, $fn) : usort($value, $fn);
+        } else if (is_array($sort)) {
             $lot = $value = [];
             if (isset($sort[1])) {
                 foreach ($this->value as $k => $v) {
