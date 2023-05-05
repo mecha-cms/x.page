@@ -134,10 +134,10 @@ To::_('page', static function (?array $value): ?string {
     if (!$value) {
         return null;
     }
-    $content = $value['content'] ?? null;
+    $content = $value['content'] ?? "";
     unset($value['content']);
-    $value = [0 => $value, P => $content];
-    return To::YAML($value, '  ', P);
+    $value = rtrim(To::YAML([0 => $value, P => $content], '  ', P) ?? "", "\n");
+    return "" !== $value ? $value : null;
 });
 
 To::_('title', static function (?string $value): ?string {

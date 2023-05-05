@@ -93,7 +93,7 @@ class Page extends File {
 
     #[ReturnTypeWillChange]
     public function jsonSerialize() {
-        return $this->_exist() ? From::page(file_get_contents($this->path), true) : [];
+        return $this->lot ?? [];
     }
 
     public function name(...$lot) {

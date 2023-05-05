@@ -65,8 +65,10 @@ class Pager extends Pages {
             }
         }
         return $this->page(null, [
+            'current' => true,
             'description' => i('You are here.'),
             'link' => $this->to($part + 1),
+            'part' => $part + 1,
             'title' => i('Current')
         ]);
     }
@@ -75,14 +77,19 @@ class Pager extends Pages {
         if (!$this->value) {
             return null;
         }
+        $chunk = $this->chunk;
+        $lot = $this->lot;
+        $part = $this->part;
         if ($take) {
-            if (!$this->lot = array_slice($this->lot, $this->chunk, null, true)) {
+            if (!$this->lot = array_slice($lot, $chunk, null, true)) {
                 return null;
             }
         }
         return $this->page(null, [
+            'current' => ($first = 1) === $part + 1,
             'description' => i('Go to the first page.'),
-            'link' => $this->to(1),
+            'link' => $this->to($first),
+            'part' => $first,
             'title' => i('First')
         ]);
     }
@@ -93,14 +100,17 @@ class Pager extends Pages {
         }
         $chunk = $this->chunk;
         $lot = $this->lot;
+        $part = $this->part;
         if ($take) {
             if (!$this->lot = array_slice($lot, 0, -(count($lot) % $chunk), true)) {
                 return null;
             }
         }
         return $this->page(null, [
+            'current' => ($last = ceil(count($lot) / $chunk)) === $part + 1,
             'description' => i('Go to the last page.'),
-            'link' => $this->to(ceil(count($lot) / $chunk)),
+            'link' => $this->to($last),
+            'part' => $last,
             'title' => i('Last')
         ]);
     }
@@ -126,10 +136,31 @@ class Pager extends Pages {
             }
         }
         return $this->page(null, [
+            'current' => false,
             'description' => i('Go to the next page.'),
             'link' => $this->to($part + 2),
+            'part' => $part + 2,
             'title' => i('Next')
         ]);
+    }
+
+    public function parts(): Traversable {
+        if (!$lot = $this->lot) {
+            yield from [];
+        } else {
+            $chunk = $this->chunk;
+            $part = $this->part;
+            foreach (array_chunk($lot, $chunk, false) as $k => $v) {
+                $page = $this->page(null, [
+                    'current' => $k === $part,
+                    'description' => i('Go to page %d.', $k + 1),
+                    'link' => $this->to($k + 1),
+                    'part' => $k + 1,
+                    'title' => i('Page %d', $k + 1)
+                ]);
+                yield $k => $page;
+            }
+        }
     }
 
     public function prev($take = false) {
@@ -145,8 +176,10 @@ class Pager extends Pages {
             }
         }
         return $this->page(null, [
+            'current' => false,
             'description' => i('Go to the previous page.'),
             'link' => $this->to($part),
+            'part' => $part,
             'title' => i('Previous')
         ]);
     }
