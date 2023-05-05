@@ -6,6 +6,36 @@ class Page extends File {
     protected $cache;
     protected $lot;
 
+    // Load all page data
+    protected function _all(): array {
+        $lot = $this->lot ?? [];
+        if ($this->_exist()) {
+            $lot = array_replace_recursive($lot, (array) (From::page(file_get_contents($path = $this->path), true)));
+            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'data') as $k => $v) {
+                $lot[basename($k, '.data')] = $this->_e(trim(file_get_contents($k)));
+            }
+        }
+        $this->_sort($lot);
+        return $lot;
+    }
+
+    protected function _e($v) {
+        $v = Is::JSON($v) ? json_decode($v, true) : e($v);
+        return "" !== $v ? $v : null;
+    }
+
+    protected function _sort(&$v) {
+        if (!$v) {
+            return;
+        }
+        foreach ($v as &$vv) {
+            if (is_array($vv)) {
+                $this->_sort($vv);
+            }
+        }
+        ksort($v);
+    }
+
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
@@ -42,7 +72,7 @@ class Page extends File {
     }
 
     public function __toString(): string {
-        return To::page($this->lot ?? []);
+        return To::page($this->_all());
     }
 
     public function __unset(string $key) {
@@ -93,7 +123,7 @@ class Page extends File {
 
     #[ReturnTypeWillChange]
     public function jsonSerialize() {
-        return $this->lot ?? [];
+        return $this->_all();
     }
 
     public function name(...$lot) {
@@ -107,11 +137,7 @@ class Page extends File {
             // Prioritize data from a file…
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
             if (is_file($f = $folder . D . $key . '.data')) {
-                $v = e(file_get_contents($f));
-                if (is_string($v) && Is::JSON($v)) {
-                    $v = json_decode($v, true);
-                }
-                return ($this->lot[$key] = $v);
+                return ($this->lot[$key] = $this->_e(trim(file_get_contents($f))));
             }
             if ('content' === $key) {
                 $content = n(file_get_contents($path));
