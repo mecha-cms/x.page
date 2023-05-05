@@ -143,7 +143,7 @@ class Page extends File {
                     break;
                 }
                 // Test for `'asdf': asdf` part in the stream
-                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "\\'"])) . "'\s*:/", $v)) {
+                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "\\'"])) . "'\\s*:/", $v)) {
                     $exist = true;
                     break;
                 }

@@ -38,7 +38,11 @@ class Pager extends Pages {
     }
 
     public function __set(string $key, $value) {
-        $this->link->{$key} = $value;
+        if (false !== strpos(',hash,host,path,port,protocol,query,', ',' . $key . ',')) {
+            $this->link->{$key} = $value;
+        } else {
+            $this->{$key} = $value;
+        }
     }
 
     public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
@@ -48,15 +52,57 @@ class Pager extends Pages {
         return $that;
     }
 
-    public function current() {
-        if ($this->value) {
-            return $this->page(null, [
-                'description' => i('You are here.'),
-                'link' => $this->to($this->part + 1),
-                'title' => i('Current')
-            ]);
+    public function current($take = false) {
+        if (!$this->value) {
+            return null;
         }
-        return null;
+        $chunk = $this->chunk;
+        $part = $this->part;
+        if ($take) {
+            $lot = $this->lot;
+            if (!$this->lot = array_slice($lot, 0, $chunk * $part, true) + array_slice($lot, $chunk * ($part + 1), null, true)) {
+                return null;
+            }
+        }
+        return $this->page(null, [
+            'description' => i('You are here.'),
+            'link' => $this->to($part + 1),
+            'title' => i('Current')
+        ]);
+    }
+
+    public function first($take = false) {
+        if (!$this->value) {
+            return null;
+        }
+        if ($take) {
+            if (!$this->lot = array_slice($this->lot, $this->chunk, null, true)) {
+                return null;
+            }
+        }
+        return $this->page(null, [
+            'description' => i('Go to the first page.'),
+            'link' => $this->to(1),
+            'title' => i('First')
+        ]);
+    }
+
+    public function last($take = false) {
+        if (!$this->value) {
+            return null;
+        }
+        $chunk = $this->chunk;
+        $lot = $this->lot;
+        if ($take) {
+            if (!$this->lot = array_slice($lot, 0, -(count($lot) % $chunk), true)) {
+                return null;
+            }
+        }
+        return $this->page(null, [
+            'description' => i('Go to the last page.'),
+            'link' => $this->to(ceil(count($lot) / $chunk)),
+            'title' => i('Last')
+        ]);
     }
 
     public function mitose() {
@@ -67,11 +113,17 @@ class Pager extends Pages {
         return $that;
     }
 
-    public function next() {
+    public function next($take = false) {
         $chunk = $this->chunk;
+        $lot = $this->lot;
         $part = $this->part;
-        if ($part >= ceil(count($this->lot) / $chunk) - 1) {
+        if ($part >= ceil(count($lot) / $chunk) - 1) {
             return null;
+        }
+        if ($take) {
+            if (!$this->lot = array_slice($lot, 0, $chunk * ($part + 1), true) + array_slice($lot, $chunk * ($part + 2), null, true)) {
+                return null;
+            }
         }
         return $this->page(null, [
             'description' => i('Go to the next page.'),
@@ -80,11 +132,17 @@ class Pager extends Pages {
         ]);
     }
 
-    public function prev() {
+    public function prev($take = false) {
         $chunk = $this->chunk;
         $part = $this->part;
         if ($part <= 0) {
             return null;
+        }
+        if ($take) {
+            $lot = $this->lot;
+            if (!$this->lot = array_slice($lot, 0, $chunk * ($part - 1), true) + array_slice($lot, $chunk * $part, null, true)) {
+                return null;
+            }
         }
         return $this->page(null, [
             'description' => i('Go to the previous page.'),
