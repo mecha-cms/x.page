@@ -111,7 +111,7 @@ namespace x\page {
             }
             $pager = \Pager::from($pages);
             $pager->hash = $hash;
-            $pager->path = $path;
+            $pager->path = $path ?: $route;
             $pager->query = $query;
             $GLOBALS['pager'] = $pager = $pager->chunk($chunk, $part);
             $GLOBALS['pages'] = $pages = $pages->chunk($chunk, $part);
