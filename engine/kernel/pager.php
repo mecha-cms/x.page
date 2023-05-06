@@ -73,6 +73,24 @@ class Pager extends Pages {
         ]);
     }
 
+    public function data(): Traversable {
+        if ($lot = $this->lot) {
+            $chunk = $this->chunk;
+            $part = $this->part;
+            foreach (array_chunk($lot, $chunk, false) as $k => $v) {
+                yield $k => $this->page(null, [
+                    'current' => $k === $part,
+                    'description' => i('Go to page %d.', $k + 1),
+                    'link' => $this->to($k + 1),
+                    'part' => $k + 1,
+                    'title' => i('Page %d', $k + 1)
+                ]);
+            }
+        } else {
+            yield from [];
+        }
+    }
+
     public function first($take = false) {
         if (!$this->value) {
             return null;
@@ -142,25 +160,6 @@ class Pager extends Pages {
             'part' => $part + 2,
             'title' => i('Next')
         ]);
-    }
-
-    public function parts(): Traversable {
-        if (!$lot = $this->lot) {
-            yield from [];
-        } else {
-            $chunk = $this->chunk;
-            $part = $this->part;
-            foreach (array_chunk($lot, $chunk, false) as $k => $v) {
-                $page = $this->page(null, [
-                    'current' => $k === $part,
-                    'description' => i('Go to page %d.', $k + 1),
-                    'link' => $this->to($k + 1),
-                    'part' => $k + 1,
-                    'title' => i('Page %d', $k + 1)
-                ]);
-                yield $k => $page;
-            }
-        }
     }
 
     public function prev($take = false) {
