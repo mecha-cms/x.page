@@ -247,8 +247,8 @@ class Page extends File {
     }
 
     public static function from(...$lot) {
-        if (is_array($v = reset($lot))) {
-            return new static(null, $v);
+        if (is_iterable($v = reset($lot))) {
+            return new static(null, y($v));
         }
         return new static(...$lot);
     }

@@ -138,7 +138,7 @@ class Pages extends Anemone {
     }
 
     public static function from(...$lot) {
-        if (is_array($v = reset($lot))) {
+        if (is_iterable($v = reset($lot))) {
             return new static($v);
         }
         $pages = [];
