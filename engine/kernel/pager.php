@@ -74,16 +74,16 @@ class Pager extends Pages {
     }
 
     public function data(): Traversable {
-        if ($lot = $this->lot) {
-            $chunk = $this->chunk;
-            $part = $this->part;
-            foreach (array_chunk($lot, $chunk, false) as $k => $v) {
-                yield $k => $this->page(null, [
-                    'current' => $k === $part,
-                    'description' => i('Go to page %d.', $k + 1),
-                    'link' => $this->to($k + 1),
-                    'part' => $k + 1,
-                    'title' => i('Page %d', $k + 1)
+        $chunk = $this->chunk;
+        $part = $this->part;
+        if ($last = ceil(count($this->lot) / $chunk)) {
+            for ($i = 0; $i < $last; ++$i) {
+                yield $i => $this->page(null, [
+                    'current' => $i === $part,
+                    'description' => i('Go to page %d.', $i + 1),
+                    'link' => $this->to($i + 1),
+                    'part' => $i + 1,
+                    'title' => i('Page %d', $i + 1)
                 ]);
             }
         } else {

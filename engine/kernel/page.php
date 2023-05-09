@@ -15,25 +15,12 @@ class Page extends File {
                 $lot[basename($k, '.data')] = $this->_e(trim(file_get_contents($k)));
             }
         }
-        $this->_sort($lot);
         return $lot;
     }
 
     protected function _e($v) {
         $v = Is::JSON($v) ? json_decode($v, true) : e($v);
         return "" !== $v ? $v : null;
-    }
-
-    protected function _sort(&$v) {
-        if (!$v) {
-            return;
-        }
-        foreach ($v as &$vv) {
-            if (is_array($vv)) {
-                $this->_sort($vv);
-            }
-        }
-        ksort($v);
     }
 
     public function __call(string $kin, array $lot = []) {
