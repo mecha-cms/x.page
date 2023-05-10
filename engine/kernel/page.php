@@ -6,18 +6,6 @@ class Page extends File {
     protected $cache;
     protected $lot;
 
-    // Load all page data
-    protected function _all(): array {
-        $lot = $this->lot ?? [];
-        if ($this->_exist()) {
-            $lot = array_replace_recursive($lot, (array) (From::page(file_get_contents($path = $this->path), true)));
-            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'data') as $k => $v) {
-                $lot[basename($k, '.data')] = $this->_e(trim(file_get_contents($k)));
-            }
-        }
-        return $lot;
-    }
-
     protected function _e($v) {
         $v = Is::JSON($v) ? json_decode($v, true) : e($v);
         return "" !== $v ? $v : null;
@@ -59,7 +47,7 @@ class Page extends File {
     }
 
     public function __toString(): string {
-        return To::page($this->_all());
+        return To::page(y($this->getIterator()));
     }
 
     public function __unset(string $key) {
@@ -93,24 +81,19 @@ class Page extends File {
     }
 
     public function getIterator(): Traversable {
-        $out = [];
+        $lot = $this->lot ?? [];
         if ($this->_exist()) {
-            $out = From::page(file_get_contents($path = $this->path), true);
-            $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
-            foreach (g($folder, 'data') as $k => $v) {
-                $v = e(file_get_contents($k));
-                if (is_string($v) && Is::JSON($v)) {
-                    $v = json_decode($v, true);
-                }
-                $out[basename($k, '.data')] = $v;
+            $lot = array_replace_recursive($lot, (array) (From::page(file_get_contents($path = $this->path), true)));
+            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'data') as $k => $v) {
+                $lot[basename($k, '.data')] = $this->_e(trim(file_get_contents($k)));
             }
         }
-        return new ArrayIterator($out);
+        return new ArrayIterator($lot);
     }
 
     #[ReturnTypeWillChange]
     public function jsonSerialize() {
-        return $this->_all();
+        return y($this->getIterator());
     }
 
     public function name(...$lot) {
