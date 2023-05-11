@@ -3,7 +3,7 @@
 class Page extends File {
 
     protected $c;
-    protected $cache;
+    protected $h;
     protected $lot;
 
     protected function _e($v) {
@@ -16,23 +16,23 @@ class Page extends File {
             return parent::__call($kin, $lot);
         }
         $hash = $lot ? z($lot) : "";
-        if (array_key_exists($kin . $hash, $this->cache)) {
-            return $this->cache[$kin . $hash];
+        if (array_key_exists($kin . $hash, $this->c)) {
+            return $this->c[$kin . $hash];
         }
-        $v = Hook::fire(map($this->c, static function ($v) use ($kin) {
+        $v = Hook::fire(map($this->h, static function ($v) use ($kin) {
             return $v .= '.' . $kin;
         }), [$this->offsetGet($kin), $lot], $this);
         if ($lot && is_callable($v) && !is_string($v)) {
             $v = call_user_func($v, ...$lot);
         }
-        return ($this->cache[$kin . $hash] = $v);
+        return ($this->c[$kin . $hash] = $v);
     }
 
     public function __construct(string $path = null, array $lot = []) {
         parent::__construct($path = $lot['path'] ?? $path);
-        $this->cache = [];
+        $this->c = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
-            $this->c[] = $v = c2f($v);
+            $this->h[] = $v = c2f($v);
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.page', true), $lot);
         }
         unset($this->lot['path']);
@@ -81,14 +81,34 @@ class Page extends File {
     }
 
     public function getIterator(): Traversable {
-        $lot = $this->lot ?? [];
+        $yield = [];
         if ($this->_exist()) {
-            $lot = array_replace_recursive($lot, (array) (From::page(file_get_contents($path = $this->path), true)));
+            // Read page data from content…
+            foreach ((array) From::page(file_get_contents($path = $this->path), true) as $k => $v) {
+                $yield[$k] = 1;
+                // Prioritize data from a file…
+                if (is_file($f = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . $k . '.data')) {
+                    yield $k => $this->_e(trim(file_get_contents($f)));
+                } else {
+                    yield $k => $v;
+                }
+            }
+            // Read the rest of page data from a file…
             foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'data') as $k => $v) {
-                $lot[basename($k, '.data')] = $this->_e(trim(file_get_contents($k)));
+                if (isset($yield[$n = basename($k, '.data')])) {
+                    continue; // Has been read, skip!
+                }
+                $yield[$n] = 1;
+                yield $n => $this->_e(trim(file_get_contents($k)));
             }
         }
-        return new ArrayIterator($lot);
+        // Read page data from the default value(s)…
+        foreach ((array) ($this->lot ?? []) as $k => $v) {
+            if (isset($yield[$k])) {
+                continue; // Has been read, skip!
+            }
+            yield $k => $v;
+        }
     }
 
     #[ReturnTypeWillChange]
@@ -161,14 +181,14 @@ class Page extends File {
         if (isset($key)) {
             $this->lot[$key] = $value;
             // Clear cache so that hook(s) can be executed again
-            unset($this->cache[$key]);
+            unset($this->c[$key]);
         } else {
             $this->lot[] = $value;
         }
     }
 
     public function offsetUnset($key): void {
-        unset($this->cache[$key], $this->lot[$key]);
+        unset($this->c[$key], $this->lot[$key]);
     }
 
     public function parent(array $lot = []) {
