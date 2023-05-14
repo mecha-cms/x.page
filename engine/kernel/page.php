@@ -54,8 +54,16 @@ class Page extends File {
         $this->offsetUnset(p2f($key));
     }
 
-    public function _exist() {
-        return parent::exist();
+    public function _exist(...$lot) {
+        return parent::exist(...$lot);
+    }
+
+    public function _name(...$lot) {
+        return parent::name(...$lot);
+    }
+
+    public function _x(...$lot) {
+        return parent::x(...$lot);
     }
 
     public function ID(...$lot) {
@@ -117,7 +125,7 @@ class Page extends File {
     }
 
     public function name(...$lot) {
-        return $this->lot['name'] ?? parent::name(...$lot);
+        return $this->lot['name'] ?? $this->_name(...$lot);
     }
 
     #[ReturnTypeWillChange]
@@ -234,6 +242,10 @@ class Page extends File {
 
     public function type(...$lot) {
         return $this->__call('type', $lot) ?? 'HTML';
+    }
+
+    public function x(...$lot) {
+        return $this->lot['x'] ?? $this->_x(...$lot);
     }
 
     public static function from(...$lot) {
