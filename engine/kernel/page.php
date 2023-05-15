@@ -220,7 +220,7 @@ class Page extends File {
     }
 
     public function time(string $format = null) {
-        $name = parent::name();
+        $name = $this->_name();
         // Set `time` value from the page’s file name
         if (
             is_string($name) && (
