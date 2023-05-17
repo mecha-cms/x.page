@@ -105,7 +105,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => ($first = 1) === $part + 1,
-            'description' => i('Go to the first page.'),
+            'description' => i('Go to the %s page.', 'first'),
             'link' => $this->to($first),
             'part' => $first,
             'title' => i('First')
@@ -126,7 +126,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => ($last = ceil(count($lot) / $chunk)) === $part + 1,
-            'description' => i('Go to the last page.'),
+            'description' => i('Go to the %s page.', 'last'),
             'link' => $this->to($last),
             'part' => $last,
             'title' => i('Last')
@@ -155,7 +155,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => false,
-            'description' => i('Go to the next page.'),
+            'description' => i('Go to the %s page.', 'next'),
             'link' => $this->to($part + 2),
             'part' => $part + 2,
             'title' => i('Next')
@@ -176,7 +176,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => false,
-            'description' => i('Go to the previous page.'),
+            'description' => i('Go to the %s page.', 'previous'),
             'link' => $this->to($part),
             'part' => $part,
             'title' => i('Previous')
