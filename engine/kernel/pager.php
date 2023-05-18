@@ -20,7 +20,7 @@ class Pager extends Pages {
             }
         }
         unset($value);
-        $this->chunk = 0;
+        $this->chunk = 5;
         $this->link = new URL($GLOBALS['url'] ?? '/');
         $this->part = 0;
         parent::__construct($out, $join);
@@ -188,15 +188,14 @@ class Pager extends Pages {
     }
 
     public function to(int $part) {
+        if ($part < 1) {
+            return null;
+        }
         $hash = $this->hash ?? "";
         $link = $this->link ?? "";
         $path = $this->path ?? "";
         $query = $this->query ?? "";
         return $link . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
-    }
-
-    public static function from(...$lot) {
-        return new static(...$lot);
     }
 
 }
