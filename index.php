@@ -6,6 +6,9 @@ namespace x\page {
     $GLOBALS['pager'] = new \Pager;
     $GLOBALS['pages'] = new \Pages;
     function route($content, $path, $query, $hash) {
+        return \Hook::fire('route.page', [$content, $path, $query, $hash]);
+    }
+    function route__page($content, $path, $query, $hash) {
         // This conditional statement is not mandatory, but it is a good practice to be stated given that hook(s) are
         // executed in order based on the `$stack` value. You could add a new route hook to overwrite the output of this
         // hook which will be executed after this hook execution. But that is not efficient because this hook need(s) to
@@ -101,10 +104,8 @@ namespace x\page {
         $GLOBALS['t'][] = i('Error');
         return ['page', [], 404];
     }
-    \Hook::set('route', function (...$lot) {
-        return \Hook::fire('route.page', $lot);
-    }, 100);
-    \Hook::set('route.page', __NAMESPACE__ . "\\route", 100);
+    \Hook::set('route', __NAMESPACE__ . "\\route", 100);
+    \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
 }
 
 namespace {
