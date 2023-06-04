@@ -1,54 +1,5 @@
 <?php
 
-namespace {
-    function page(...$lot) {
-        return \Page::from(...$lot);
-    }
-    function pages(...$lot) {
-        return \Pages::from(...$lot);
-    }
-    // Set page’s condition data as early as possible, so that other
-    // extension(s) can use it without having to enter the `route` hook
-    $path = \trim($url->path ?? "", '/');
-    $route = \trim($state->route ?? 'index', '/');
-    $folder = \LOT . \D . 'page' . \D . (\preg_replace('/\/[1-9]\d*$/', "", $path) ?: $route);
-    $parent = \dirname($folder);
-    $has_pages = \q(\g($folder, 'page'));
-    $has_parent = \exist([
-        $parent . '.archive',
-        $parent . '.page',
-        $parent . \D . '.archive',
-        $parent . \D . '.page'
-    ], 1);
-    $is_home = "" === $path || $route === $path ? \exist([
-        $folder . '.archive',
-        $folder . '.page'
-    ], 1) : false;
-    $is_page = \exist([
-        $folder . '.archive',
-        $folder . '.page'
-    ], 1);
-    // Check if `pages` mode is disabled by a file like `.\lot\page\about\.page`
-    $not_pages = \exist([
-        $folder . \D . '.archive',
-        $folder . \D . '.page'
-    ], 1);
-    \State::set([
-        'has' => [
-            'page' => $is_home || $is_page,
-            'pages' => !!$has_pages,
-            'parent' => $has_parent && false !== \strpos($path, '/'),
-            'part' => !!\preg_match('/\/[1-9]\d*$/', $path)
-        ],
-        'is' => [
-            'error' => $is_error = ("" === $path && !$is_home || "" !== $path && !$is_page) ? 404 : false,
-            'home' => !!$is_home,
-            'page' => $is_home || ($is_page && ($not_pages || !$has_pages)),
-            'pages' => $has_pages && !$not_pages
-        ]
-    ]);
-}
-
 namespace x\page {
     // Initialize response variable(s)
     $GLOBALS['page'] = new \Page;
@@ -154,4 +105,53 @@ namespace x\page {
         return \Hook::fire('route.page', $lot);
     }, 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route", 100);
+}
+
+namespace {
+    function page(...$lot) {
+        return \Page::from(...$lot);
+    }
+    function pages(...$lot) {
+        return \Pages::from(...$lot);
+    }
+    // Set page’s condition data as early as possible, so that other
+    // extension(s) can use it without having to enter the `route` hook
+    $path = \trim($url->path ?? "", '/');
+    $route = \trim($state->route ?? 'index', '/');
+    $folder = \LOT . \D . 'page' . \D . (\preg_replace('/\/[1-9]\d*$/', "", $path) ?: $route);
+    $parent = \dirname($folder);
+    $has_pages = \q(\g($folder, 'page'));
+    $has_parent = \exist([
+        $parent . '.archive',
+        $parent . '.page',
+        $parent . \D . '.archive',
+        $parent . \D . '.page'
+    ], 1);
+    $is_home = "" === $path || $route === $path ? \exist([
+        $folder . '.archive',
+        $folder . '.page'
+    ], 1) : false;
+    $is_page = \exist([
+        $folder . '.archive',
+        $folder . '.page'
+    ], 1);
+    // Check if `pages` mode is disabled by a file like `.\lot\page\about\.page`
+    $not_pages = \exist([
+        $folder . \D . '.archive',
+        $folder . \D . '.page'
+    ], 1);
+    \State::set([
+        'has' => [
+            'page' => $is_home || $is_page,
+            'pages' => !!$has_pages,
+            'parent' => $has_parent && false !== \strpos($path, '/'),
+            'part' => !!\preg_match('/\/[1-9]\d*$/', $path)
+        ],
+        'is' => [
+            'error' => $is_error = ("" === $path && !$is_home || "" !== $path && !$is_page) ? 404 : false,
+            'home' => !!$is_home,
+            'page' => $is_home || ($is_page && ($not_pages || !$has_pages)),
+            'pages' => $has_pages && !$not_pages
+        ]
+    ]);
 }
