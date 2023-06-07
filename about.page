@@ -16,7 +16,7 @@ a web site. This extension also adds some useful properties to the `$site` and `
 A page is a plain text file stored in the `.\lot\page` folder. The correct file name format for a page consists of the
 characters `a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `i`, `j`, `k`, `l`, `m`, `n`, `o`, `p`, `q`, `r`, `s`, `t`, `u`, `v`,
 `w`, `x`, `y`, `z`, `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, and `-`. The characters `.` and `_` can also be
-used, but should be used sparingly, as not all GUI applications like to preserve these characters for security reasons.
+used, but should be used sparingly, as not all GUI applications like to preserve these characters for security reasons:
 
 ~~~ .txt
 .\
@@ -28,7 +28,7 @@ used, but should be used sparingly, as not all GUI applications like to preserve
 ~~~
 
 A `.page` extension is the default file extension for page files to indicate that the page is active and publicly
-view-able. There are several other page file extensions that can also be used:
+viewable. There are several other page file extensions that can also be used:
 
 `.page`
 : Publicly available and appear together in the list of public pages.
@@ -42,7 +42,7 @@ view-able. There are several other page file extensions that can also be used:
 For example, to access and read the `.\lot\page\lorem-ipsum.page` file from the web site, visit
 `http://127.0.0.1/lorem-ipsum`.
 
-A minimum page file content consists of a text. Any text. With optional header data written in YAML syntax.
+A minimum page file content consists of a text. Any text. With optional header data written in YAML syntax:
 
 ~~~ .yaml
 ---
@@ -60,7 +60,7 @@ type: HTML
 
 Any missing header data will be replaced by the default data that is automatically generated. Let’s say that the default
 data is loaded first and then overwritten by the header data of the current page. Most of the default data is just an
-empty string or `null`, which in most cases can also be evaluated as a boolean `false`.
+empty string or `null`, which in most cases can also be evaluated as a boolean `false`:
 
 ~~~ .php
 return [
@@ -77,7 +77,7 @@ return [
 ];
 ~~~
 
-A folder with the same name as the page name can also link a page file to other files.
+A folder with the same name as the page name can also link a page file to other files:
 
 ~~~ .txt
 .\
@@ -95,8 +95,8 @@ this file will act as an external page property. This is called data.
 ### Data
 
 External data has a higher priority than internal header data because they are easier to parse. So if you have a
-`title.data` file in the `.\lot\page\lorem-ipsum folder`, the contents of that file will overwrite the title property
-written in the page file.
+`title.data` file in the `.\lot\page\lorem-ipsum` folder, the contents of that file will overwrite the title property
+written in the page file:
 
 ~~~ .txt
 .\
@@ -111,11 +111,8 @@ written in the page file.
         └── no-no-no.page
 ~~~
 
-Users can also add other page files to the folder. These can then be called as child pages.
-
-### Child
-
-Child pages override the page view of the current file and change the page view to a list of child pages.
+Users can also add other page files to the folder. These can then be called as child pages. Child pages override the
+page view of the current file and change the page view to a list of child pages:
 
 ~~~ .txt
 .\
@@ -133,7 +130,7 @@ Child pages override the page view of the current file and change the page view 
         └── no-no-no.page
 ~~~
 
-Place an empty file named `.archive` or `.page` in the folder to disable the page listing view in a particular folder.
+Place an empty file named `.archive` or `.page` in the folder to disable the page listing view in a particular folder:
 
 ~~~ .txt
 .\
