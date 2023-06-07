@@ -7,6 +7,10 @@ namespace {
     function pages(...$lot) {
         return \Pages::from(...$lot);
     }
+    // Initialize response variable(s)
+    $GLOBALS['page'] = new \Page;
+    $GLOBALS['pager'] = new \Pager;
+    $GLOBALS['pages'] = new \Pages;
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
     $path = \trim($url->path ?? "", '/');
@@ -50,10 +54,6 @@ namespace {
 }
 
 namespace x\page {
-    // Initialize response variable(s)
-    $GLOBALS['page'] = new \Page;
-    $GLOBALS['pager'] = new \Pager;
-    $GLOBALS['pages'] = new \Pages;
     function route($content, $path, $query, $hash) {
         return \Hook::fire('route.page', [$content, $path, $query, $hash]);
     }

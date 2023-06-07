@@ -8,16 +8,15 @@ type: Markdown
 version: 3.0.0
 ...
 
-This extension activates the basic features of a website by utilizing the structure of the page file placement in the
-`.\lot\page` folder. This extension also adds some useful properties to the `$site` variable.
+This extension uses the structure of the page file location in the `.\lot\page` folder to enable the basic functions of
+a web site. This extension also adds some useful properties to the `$site` and `$state` variable.
 
 ### Page
 
-What is a page?
-
-A page is a plain text file stored in the `.\lot\page` folder. The correct file name format for the page is composed of
+A page is a plain text file stored in the `.\lot\page` folder. The correct file name format for a page consists of the
 characters `a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `i`, `j`, `k`, `l`, `m`, `n`, `o`, `p`, `q`, `r`, `s`, `t`, `u`, `v`,
-`w`, `x`, `y`, `z`, `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9` and `-`.
+`w`, `x`, `y`, `z`, `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, and `-`. The characters `.` and `_` can also be
+used, but should be used sparingly, as not all GUI applications like to preserve these characters for security reasons.
 
 ~~~ .txt
 .\
@@ -28,21 +27,22 @@ characters `a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `i`, `j`, `k`, `l`, `m`, `n`,
         └── no-no-no.page ✔
 ~~~
 
-A `.page` extension is the default file extension for page files to state that the page is active and publicly
-available. There are several other page file extensions that can also be used:
+A `.page` extension is the default file extension for page files to indicate that the page is active and publicly
+view-able. There are several other page file extensions that can also be used:
 
 `.page`
-: Available publicly and will appears together in the public page list.
+: Publicly available and appear together in the list of public pages.
 
 `.archive`
-: Available publicly but will not appears together in the public page list.
+: Publicly available, but does not appear together in the list of public pages.
 
 `.draft`
-: Not available publicly and will not appears together in the public page list.
+: Not publicly available and will not appear together in the list of public pages.
 
-To read `.\lot\page\lorem-ipsum.page` from the site, visit ` http://127.0.0.1/lorem-ipsum `.
+For example, to access and read the `.\lot\page\lorem-ipsum.page` file from the web site, visit
+`http://127.0.0.1/lorem-ipsum`.
 
-A minimal page file content consists of a text. Any text. With optional header data written in a YAML syntax:
+A minimum page file content consists of a text. Any text. With optional header data written in YAML syntax.
 
 ~~~ .yaml
 ---
@@ -58,26 +58,26 @@ type: HTML
 <p>This page content is also valid.</p>
 ~~~
 
-Any missing header data will be replaced by default data that is generated automatically by the engine. Let’s say that
-the default data will be loaded at first, and then it will be overwritten by the header data of the current page. Most
-of the default data are just an empty string or `null`, which can also be evaluated to boolean `false` in most cases.
+Any missing header data will be replaced by the default data that is automatically generated. Let’s say that the default
+data is loaded first and then overwritten by the header data of the current page. Most of the default data is just an
+empty string or `null`, which in most cases can also be evaluated as a boolean `false`.
 
 ~~~ .php
 return [
     'x' => [
         'page' => [
             'page' => [
-                'title' => null,
-                'description' => null,
                 'author' => null,
+                'description' => null,
+                'title' => null,
                 'type' => 'Markdown'
             ]
         ]
     ]
-]
+];
 ~~~
 
-A page file can also have connections to other files through a folder that has the same name as the page name.
+A folder with the same name as the page name can also link a page file to other files.
 
 ~~~ .txt
 .\
@@ -89,14 +89,14 @@ A page file can also have connections to other files through a folder that has t
         └── no-no-no.page
 ~~~
 
-Users can store other data that has relationship with the page file in that folder. If the file name ends with extension
-`.data`, then this file will act as an external page property. This is called **Data**.
+Users can store other data related to the page file in this folder. If the file name ends with the extension `.data`,
+this file will act as an external page property. This is called data.
 
 ### Data
 
-**Data** has a higher priority than internal header data. So, if you have a `title.data` file in the
-`.\lot\page\lorem-ipsum` folder, then the contents of that file will overwrite the `title` property written in the page
-file.
+External data has a higher priority than internal header data because they are easier to parse. So if you have a
+`title.data` file in the `.\lot\page\lorem-ipsum folder`, the contents of that file will overwrite the title property
+written in the page file.
 
 ~~~ .txt
 .\
@@ -111,11 +111,11 @@ file.
         └── no-no-no.page
 ~~~
 
-Users can also add other page files in the folder as well. This, can then be named as **Child**.
+Users can also add other page files to the folder. These can then be called as child pages.
 
 ### Child
 
-**Child** will overwrite the page view of the current file, and will change the page view into a list of page children.
+Child pages override the page view of the current file and change the page view to a list of child pages.
 
 ~~~ .txt
 .\
@@ -133,17 +133,15 @@ Users can also add other page files in the folder as well. This, can then be nam
         └── no-no-no.page
 ~~~
 
-**Note:** To ask the engine to disable the page listing view in a particular folder, put an empty file with name
-`.page` or `.archive` in the folder.
+Place an empty file named `.archive` or `.page` in the folder to disable the page listing view in a particular folder.
 
 ~~~ .txt
-// Before
-.\lot\page\lorem-ipsum\
-.\lot\page\lorem-ipsum.page
-
-// After
-.\lot\page\lorem-ipsum\.page
-.\lot\page\lorem-ipsum.page
+.\
+└── lot\
+    └── page\
+        ├── lorem-ipsum\
+        │   └── .page ✔
+        └── lorem-ipsum.page
 ~~~
 
 And so on…
@@ -173,7 +171,7 @@ And so on…
 
 ---
 
-These page conditional statements are available to quickly determine the type of page we are currently in:
+These page conditional statements are available to quickly determine the type of page we are on:
 
 `$site->has('next')`
 : Returns `true` if it is possible to go to the next page.
