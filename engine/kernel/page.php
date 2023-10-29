@@ -139,8 +139,8 @@ class Page extends File {
             }
             if ('content' === $key) {
                 $content = n(file_get_contents($path));
-                if (YAML\SOH === strtok($content, " \n\t#")) {
-                    $content = trim(explode("\n" . YAML\EOT . "\n", $content . "\n", 2)[1] ?? "", "\n");
+                if (3 === strspn($content, '-')) {
+                    $content = trim(explode("\n...\n", $content . "\n", 2)[1] ?? "", "\n");
                 } else {
                     $content = trim($content, "\n");
                 }
@@ -150,16 +150,16 @@ class Page extends File {
             $exist = false;
             foreach (stream($path) as $k => $v) {
                 // No `---\n` part at the start of the stream means no page header at all
-                if (0 === $k && (YAML\SOH . "\n" !== $v || YAML\SOH !== strtok($v, " \n\t#"))) {
+                if (0 === $k && "---\n" !== $v && 3 !== strspn($v, '-')) {
                     break;
                 }
                 // Has reached the `...\n` part in the stream means the end of the page header
-                if (YAML\EOT . "\n" === $v) {
+                if ("...\n" === $v) {
                     break;
                 }
                 // Test for `{ asdf: asdf }` part in the stream
                 if ($v && '{' === $v[0]) {
-                    $v = trim(substr(trim(strtok($v, '#')), 1, -1));
+                    $v = trim(substr(trim(strstr($v, '#', true) ?: $v), 1, -1));
                 }
                 // Test for `"asdf": asdf` part in the stream
                 if ($v && '"' === $v[0] && preg_match('/^"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v)) {
@@ -167,18 +167,18 @@ class Page extends File {
                     break;
                 }
                 // Test for `'asdf': asdf` part in the stream
-                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "\\'"])) . "'\\s*:/", $v)) {
+                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "''"])) . "'\\s*:/", $v)) {
                     $exist = true;
                     break;
                 }
                 // Test for `asdf: asdf` part in the stream
-                if ($v && $key === strtok($v, " \n\t:")) {
+                if ($v && $key === strtok($v, " :\n\t")) {
                     $exist = true;
                     break;
                 }
             }
             if ($exist) {
-                $lot = From::page(file_get_contents($path), true);
+                $lot = From::page(file_get_contents($path));
                 $this->lot = array_replace_recursive($this->lot ?? [], $lot);
             }
         }
@@ -220,22 +220,22 @@ class Page extends File {
     }
 
     public function time(string $format = null) {
-        $name = $this->_name();
+        $name = (string) $this->_name();
         // Set `time` value from the page’s file name
-        if (
-            is_string($name) && (
-                // `2017-04-21.page`
-                2 === substr_count($name, '-') ||
-                // `2017-04-21-14-25-00.page`
-                5 === substr_count($name, '-')
-            ) &&
-            is_numeric(strtr($name, ['-' => ""])) &&
-            preg_match('/^[1-9]\d{3,}-(0\d|1[0-2])-(0\d|[1-2]\d|3[0-1])(-([0-1]\d|2[0-4])(-([0-5]\d|60)){2})?$/', $name)
-        ) {
+        if ($name && (
+            // `2017-04-21.page`
+            10 === strspn($name, '-0123456789') && 2 === substr_count($name, '-') ||
+            // `2017-04-21-14-25-00.page`
+            19 === strspn($name, '-0123456789') && 5 === substr_count($name, '-')
+        ) && preg_match('/^[1-9]\d{3,}-(0\d|1[0-2])-(0\d|[1-2]\d|3[0-1])(-([0-1]\d|2[0-4])(-([0-5]\d|60)){2})?$/', $name)) {
             $time = new Time($name);
         // Else…
         } else {
-            $time = new Time($this->offsetGet('time') ?? parent::time());
+            $time = $this->offsetGet('time') ?? parent::time();
+            if (\is_object($time) && $time instanceof \DateTime) {
+                $time = $time->format('Y-m-d H:i:s');
+            }
+            $time = new Time($time);
         }
         return $format ? $time($format) : $time;
     }

@@ -4,25 +4,20 @@ To::_('description', static function (?string $value, $max = 200): ?string {
     if (!$value) {
         return null;
     }
-    $value = strip_tags(preg_replace(['/\s+/', '/\s*(<\/(?:' . implode('|', [
+    // Add a space at the end of the block tag(s) that will be removed.
+    // So that `<p>asdf.</p><p>asdf</p>` becomes `asdf. asdf` and not `asdf.asdf`.
+    $value = preg_replace(['/\s+/', '/\s*(<\/(?:' . implode('|', [
         'address',
         'article',
         'blockquote',
-        'dd',
+        'd[dt]',
         'details',
         'div',
-        'dt',
         'figcaption',
         'figure',
         'footer',
-        'h1',
-        'h2',
-        'h3',
-        'h4',
-        'h5',
-        'h6',
+        'h[123456r]',
         'header',
-        'hr',
         'li',
         'main',
         'nav',
@@ -30,11 +25,9 @@ To::_('description', static function (?string $value, $max = 200): ?string {
         'pre',
         'section',
         'summary',
-        'td',
-        'th'
-    // Make sure to add space at the end of the block tag(s) that will be removed. To make `<p>asdf.</p><p>asdf</p>`
-    // becomes `asdf. asdf` and not `asdf.asdf`.
-    ]) . ')>)\s*/i'], [' ', '$1 '], $value), [
+        't[dh]'
+    ]) . ')>)\s*/i'], [' ', '$1 '], $value);
+    $value = strip_tags($value, [
         'a',
         'abbr',
         'b',
@@ -136,8 +129,8 @@ To::_('page', static function (?array $value): ?string {
     }
     $content = $value['content'] ?? "";
     unset($value['content']);
-    $value = rtrim(To::YAML([0 => $value, P => $content], '  ', P) ?? "", "\n");
-    return "" !== $value ? $value : null;
+    $value = rtrim("---\n" . To::YAML($value, 2) . "\n...\n\n" . $content, "\n");
+    return "---\n\n..." !== $value ? $value : null;
 });
 
 To::_('title', static function (?string $value): ?string {

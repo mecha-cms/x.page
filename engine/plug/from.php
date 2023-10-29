@@ -1,13 +1,16 @@
 <?php
 
-From::_('page', static function (?string $value, $eval = false): array {
+From::_('page', static function (?string $value): array {
     if (!$value = n($value)) {
         return [];
     }
-    if (0 !== strpos($value, YAML\SOH . "\n")) {
-        // Make sure page header is present even if it is empty
-        $value = YAML\SOH . "\n" . YAML\EOT . "\n\n" . $value;
+    if (3 === strspn($value, '-')) {
+        $value = trim(substr($value, 3), "\n");
     }
-    $v = (array) From::YAML($value, '  ', P, $eval);
-    return a($v[0]) + ['content' => $v[P] ?? null];
+    $v = explode("\n...\n", $value . "\n", 2);
+    if (is_array($v[0] = From::YAML(trim($v[0], "\n"), true))) {
+        $v[1] = trim($v[1] ?? "", "\n");
+        return array_replace("" !== $v[1] ? ['content' => $v[1]] : [], $v[0]);
+    }
+    return ['content' => $value];
 });
