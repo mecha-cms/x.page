@@ -17,6 +17,8 @@ class Pager extends Pages {
                 $out[$k] = $v->path;
             } else if ($v && is_string($v) && is_file($v)) {
                 $out[$k] = $v;
+            } else if (is_array($v)) {
+                $out[$k] = $v;
             }
         }
         unset($value);
@@ -66,7 +68,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => true,
-            'description' => i('You are here.'),
+            'description' => i('You are here'),
             'link' => $this->to($part + 1),
             'part' => $part + 1,
             'title' => i('Current')
@@ -80,7 +82,7 @@ class Pager extends Pages {
             for ($i = 0; $i < $last; ++$i) {
                 yield $i => $this->page(null, [
                     'current' => $i === $part,
-                    'description' => i('Go to page %d.', $i + 1),
+                    'description' => i('Go to page %d', $i + 1),
                     'link' => $this->to($i + 1),
                     'part' => $i + 1,
                     'title' => i('Page %d', $i + 1)
@@ -105,7 +107,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => ($first = 1) === $part + 1,
-            'description' => i('Go to the %s page.', 'first'),
+            'description' => i('Go to the %s page', 'first'),
             'link' => $this->to($first),
             'part' => $first,
             'title' => i('First')
@@ -126,7 +128,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => ($last = ceil(count($lot) / $chunk)) === $part + 1,
-            'description' => i('Go to the %s page.', 'last'),
+            'description' => i('Go to the %s page', 'last'),
             'link' => $this->to($last),
             'part' => $last,
             'title' => i('Last')
@@ -155,7 +157,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => false,
-            'description' => i('Go to the %s page.', 'next'),
+            'description' => i('Go to the %s page', 'next'),
             'link' => $this->to($part + 2),
             'part' => $part + 2,
             'title' => i('Next')
@@ -176,7 +178,7 @@ class Pager extends Pages {
         }
         return $this->page(null, [
             'current' => false,
-            'description' => i('Go to the %s page.', 'previous'),
+            'description' => i('Go to the %s page', 'previous'),
             'link' => $this->to($part),
             'part' => $part,
             'title' => i('Previous')
