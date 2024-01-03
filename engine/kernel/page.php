@@ -159,6 +159,7 @@ class Page extends File {
                 }
                 // Test for `{ asdf: asdf }` part in the stream
                 if ($v && '{' === $v[0]) {
+                    $flow = true;
                     $v = trim(substr(trim(strstr($v, '#', true) ?: $v), 1, -1));
                 }
                 // Test for `"asdf": asdf` part in the stream
@@ -175,6 +176,18 @@ class Page extends File {
                 if ($v && $key === strtok($v, " :\n\t")) {
                     $exist = true;
                     break;
+                }
+                if (isset($flow) && false !== strpos($v, ',')) {
+                    $v = ' ' . strtr($v, ["\t" => ' ']) . ' ';
+                    if (
+                        false !== strpos($v, ' ' . $key . ':') ||
+                        preg_match('/\s' . x($key) . '\s*:/', $v) ||
+                        preg_match('/\s"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v) ||
+                        preg_match("/\\s'" . x(strtr($key, ["'" => "''"])) . "'\\s*:/", $v)
+                    ) {
+                        $exist = true;
+                        break;
+                    }
                 }
             }
             if ($exist) {
