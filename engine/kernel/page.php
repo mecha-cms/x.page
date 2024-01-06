@@ -73,9 +73,11 @@ class Page extends File {
     }
 
     public function URL(...$lot) {
-        if ($path = $this->_exist()) {
-            $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
-            return $this->__call('url', $lot) ?? long(strtr(strtr($folder, [LOT . D . 'page' . D => '/']), D, '/'));
+        if ($url = $this->__call('url', $lot)) {
+            return $url;
+        }
+        if ($route = $this->route(...$lot)) {
+            return long($route);
         }
         return null;
     }
@@ -230,6 +232,17 @@ class Page extends File {
             return null;
         }
         return new static($path, $lot);
+    }
+
+    public function route(...$lot) {
+        if ($route = $this->__call('route', $lot)) {
+            return '/' . trim(strtr($route, D, '/'), '/');
+        }
+        if ($path = $this->_exist()) {
+            $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
+            return '/' . trim(strtr($folder, [LOT . D . 'page' . D => '/', D => '/']), '/');
+        }
+        return parent::route();
     }
 
     public function time(string $format = null) {
