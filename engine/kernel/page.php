@@ -236,13 +236,13 @@ class Page extends File {
 
     public function route(...$lot) {
         if ($route = $this->__call('route', $lot)) {
-            return '/' . trim(strtr($route, D, '/'), '/');
+            return '/' . trim(strtr($route, [D => '/']), '/');
         }
         if ($path = $this->_exist()) {
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
             return '/' . trim(strtr($folder, [LOT . D . 'page' . D => '/', D => '/']), '/');
         }
-        return parent::route();
+        return null;
     }
 
     public function time(string $format = null) {
