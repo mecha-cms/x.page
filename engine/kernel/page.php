@@ -42,7 +42,7 @@ class Page extends File {
         return parent::__get($key) ?? $this->__call($key);
     }
 
-    public function __set(string $key, $value) {
+    public function __set(string $key, $value): void {
         $this->offsetSet(p2f($key), $value);
     }
 
@@ -50,7 +50,7 @@ class Page extends File {
         return To::page(y($this->getIterator()));
     }
 
-    public function __unset(string $key) {
+    public function __unset(string $key): void {
         $this->offsetUnset(p2f($key));
     }
 
@@ -121,7 +121,6 @@ class Page extends File {
         }
     }
 
-    #[ReturnTypeWillChange]
     public function jsonSerialize() {
         return y($this->getIterator());
     }
@@ -130,7 +129,6 @@ class Page extends File {
         return $this->lot['name'] ?? $this->_name(...$lot);
     }
 
-    #[ReturnTypeWillChange]
     public function offsetGet($key) {
         if ($this->_exist()) {
             $path = $this->path;

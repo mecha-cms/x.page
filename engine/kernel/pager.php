@@ -35,11 +35,11 @@ class Pager extends Pages {
         return $this->link->{$key};
     }
 
-    public function __isset(string $key) {
+    public function __isset(string $key): bool {
         return null !== $this->__get($key);
     }
 
-    public function __set(string $key, $value) {
+    public function __set(string $key, $value): void {
         if (false !== strpos(',hash,host,path,port,protocol,query,', ',' . $key . ',')) {
             $this->link->{$key} = $value;
         } else {

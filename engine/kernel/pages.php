@@ -63,7 +63,6 @@ class Pages extends Anemone {
         return $that;
     }
 
-    #[ReturnTypeWillChange]
     public function offsetGet($key) {
         return is_array($value = parent::offsetGet($key)) ? $this->page(null, $value) : $this->page($value);
     }
