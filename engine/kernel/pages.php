@@ -2,6 +2,27 @@
 
 class Pages extends Anemone {
 
+    public $data = [];
+
+    public function __get(string $key) {
+        if (array_key_exists($key, $this->data)) {
+            return $this->data[$key];
+        }
+        return parent::__get($key);
+    }
+
+    public function __isset(string $key): bool {
+        return null !== $this->__get($key);
+    }
+
+    public function __set(string $key, $value): void {
+        $this->data[$key] = $value;
+    }
+
+    public function __unset(string $key): void {
+        unset($this->data[$key]);
+    }
+
     public function find($fn) {
         $fn = is_callable($fn) ? Closure::fromCallable($fn)->bindTo($this) : $fn;
         return find($this->value, function ($v, $k) {
