@@ -8,10 +8,10 @@ class Pages extends Anemone {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
-        if (array_key_exists($key, $this->data)) {
-            return $this->data[$key];
+        if (parent::_($key)) {
+            return $this->__call($key);
         }
-        return parent::__get($key);
+        return $this->data[$key] ?? null;
     }
 
     public function __isset(string $key): bool {
@@ -19,7 +19,11 @@ class Pages extends Anemone {
     }
 
     public function __set(string $key, $value): void {
-        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {} else {
+        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
+            // Skip!
+        } else if (parent::_($key)) {
+            // Skip!
+        } else {
             $this->data[$key] = $value;
         }
     }
@@ -31,11 +35,17 @@ class Pages extends Anemone {
                 continue;
             }
             foreach ($lot[$key] as &$v) {
-                if (!is_string($v) || 0 === strpos($v, ".\\")) {
-                    if (is_array($v) && is_string($path = $v['path'] ?? 0) && 0 !== strpos($path, ".\\")) {
-                        $v['path'] = strtr($path, [PATH . D => ".\\", D => "\\"]);
+                if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
+                    if (!is_array($v) || !$v) {
                         continue;
                     }
+                    foreach ($v as &$vv) {
+                        if (!is_string($vv) || 0 !== strpos($v, PATH . D)) {
+                            continue;
+                        }
+                        $vv = strtr($vv, [PATH . D => ".\\", D => "\\"]);
+                    }
+                    unset($vv);
                     continue;
                 }
                 $v = strtr($v, [PATH . D => ".\\", D => "\\"]);
@@ -53,10 +63,16 @@ class Pages extends Anemone {
         foreach (['lot', 'value'] as $key) {
             foreach ($lot[$key] as &$v) {
                 if (!is_string($v) || 0 !== strpos($v, ".\\")) {
-                    if (is_array($v) && is_string($path = $v['path'] ?? 0) && 0 === strpos($path, ".\\")) {
-                        $v['path'] = PATH . D . strtr(substr($path, 2), ["\\" => D]);
+                    if (!is_array($v) || !$v) {
                         continue;
                     }
+                    foreach ($v as &$vv) {
+                        if (!is_string($vv) || 0 !== strpos($v, ".\\")) {
+                            continue;
+                        }
+                        $vv = PATH . D . strtr(substr($vv, 2), ["\\" => D]);
+                    }
+                    unset($vv);
                     continue;
                 }
                 $v = PATH . D . strtr(substr($v, 2), ["\\" => D]);

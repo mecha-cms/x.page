@@ -7,8 +7,10 @@ class Page extends File {
     protected $lot;
 
     protected function _e($v) {
-        $v = Is::JSON($v) ? json_decode($v, true) : e($v);
-        return "" !== $v ? $v : null;
+        if ('null' === $v) {
+            return null;
+        }
+        return "" !== ($v = json_decode($v, true) ?? e($v)) ? $v : null;
     }
 
     public function __call(string $kin, array $lot = []) {
@@ -38,22 +40,40 @@ class Page extends File {
         unset($this->lot['path']);
     }
 
-    public function __get(string $key) {
-        return parent::__get($key) ?? $this->__call($key);
-    }
-
     public function __set(string $key, $value): void {
         $this->offsetSet(p2f($key), $value);
     }
 
     public function __serialize(): array {
         $lot = parent::__serialize();
+        if (!empty($lot['lot'])) {
+            foreach ($lot['lot'] as &$v) {
+                if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
+                    continue;
+                }
+                $v = strtr($v, [PATH . D => ".\\", D => "\\"]);
+            }
+            unset($v);
+        }
         unset($lot['c'], $lot['h']);
         return $lot;
     }
 
     public function __toString(): string {
         return To::page(y($this->getIterator()));
+    }
+
+    public function __unserialize(array $lot): void {
+        if (!empty($lot['lot'])) {
+            foreach ($lot['lot'] as &$v) {
+                if (!is_string($v) || 0 !== strpos($v, ".\\")) {
+                    continue;
+                }
+                $v = PATH . D . strtr(substr($v, 2), ["\\" => D]);
+            }
+            unset($v);
+        }
+        parent::__unserialize($lot);
     }
 
     public function __unset(string $key): void {
