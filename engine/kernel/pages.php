@@ -6,7 +6,7 @@ class Pages extends Anemone {
 
     public function __get(string $key) {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
-            return null;
+            return $this->{$key}();
         }
         if (array_key_exists($key, $this->data)) {
             return $this->data[$key];
