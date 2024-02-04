@@ -2,9 +2,12 @@
 
 class Pages extends Anemone {
 
-    public $data = [];
+    protected $data = [];
 
     public function __get(string $key) {
+        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
+            return null;
+        }
         if (array_key_exists($key, $this->data)) {
             return $this->data[$key];
         }
@@ -16,7 +19,51 @@ class Pages extends Anemone {
     }
 
     public function __set(string $key, $value): void {
-        $this->data[$key] = $value;
+        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {} else {
+            $this->data[$key] = $value;
+        }
+    }
+
+    public function __serialize(): array {
+        $lot = parent::__serialize();
+        foreach (['lot', 'value'] as $key) {
+            if (empty($lot[$key])) {
+                continue;
+            }
+            foreach ($lot[$key] as &$v) {
+                if (!is_string($v) || 0 === strpos($v, ".\\")) {
+                    if (is_array($v) && is_string($path = $v['path'] ?? 0) && 0 !== strpos($path, ".\\")) {
+                        $v['path'] = strtr($path, [PATH . D => ".\\", D => "\\"]);
+                        continue;
+                    }
+                    continue;
+                }
+                $v = strtr($v, [PATH . D => ".\\", D => "\\"]);
+            }
+            unset($v);
+        }
+        return $lot;
+    }
+
+    public function __toString(): string {
+        return serialize($this->__serialize()['value'] ?? []);
+    }
+
+    public function __unserialize(array $lot): void {
+        foreach (['lot', 'value'] as $key) {
+            foreach ($lot[$key] as &$v) {
+                if (!is_string($v) || 0 !== strpos($v, ".\\")) {
+                    if (is_array($v) && is_string($path = $v['path'] ?? 0) && 0 === strpos($path, ".\\")) {
+                        $v['path'] = PATH . D . strtr(substr($path, 2), ["\\" => D]);
+                        continue;
+                    }
+                    continue;
+                }
+                $v = PATH . D . strtr(substr($v, 2), ["\\" => D]);
+            }
+            unset($v);
+        }
+        parent::__unserialize($lot);
     }
 
     public function __unset(string $key): void {
@@ -54,6 +101,10 @@ class Pages extends Anemone {
             return fire($fn, [is_array($v) ? $this->page(null, $v) : $this->page($v), $k], $this);
         }, $keys);
         return $that;
+    }
+
+    public function jsonSerialize() {
+        return $this->__serialize()['value'] ?? [];
     }
 
     public function last($take = false) {

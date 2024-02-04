@@ -46,6 +46,12 @@ class Page extends File {
         $this->offsetSet(p2f($key), $value);
     }
 
+    public function __serialize(): array {
+        $lot = parent::__serialize();
+        unset($lot['c'], $lot['h']);
+        return $lot;
+    }
+
     public function __toString(): string {
         return To::page(y($this->getIterator()));
     }
