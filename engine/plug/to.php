@@ -27,7 +27,7 @@ To::_('description', static function (?string $value, $max = 200): ?string {
         'summary',
         't[dh]'
     ]) . ')>)\s*/i'], [' ', '$1 '], $value);
-    $value = strip_tags($value, [
+    $value = trim(strip_tags($value, [
         'a',
         'abbr',
         'b',
@@ -56,7 +56,10 @@ To::_('description', static function (?string $value, $max = 200): ?string {
         'u',
         'var',
         'wbr'
-    ]);
+    ]));
+    if ("" === $value) {
+        return null;
+    }
     if (is_int($max)) {
         $max = [$max, '&#x2026;'];
     }
@@ -134,7 +137,9 @@ To::_('page', static function (?array $value): ?string {
 });
 
 To::_('title', static function (?string $value): ?string {
-    $value = w($value ?? "");
+    if ("" === ($value = w(trim($value ?? "")) ?? "")) {
+        return null;
+    }
     $out = extension_loaded('mbstring') ? mb_convert_case($value, MB_CASE_TITLE) : ucwords($value);
     // Convert to abbreviation if all case(s) are in upper
     $out = u($out) === $out ? strtr($out, [' ' => ""]) : $out;
