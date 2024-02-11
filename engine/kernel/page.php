@@ -282,7 +282,7 @@ class Page extends File {
         // Else…
         } else {
             $time = $this->offsetGet('time') ?? parent::time();
-            if (\is_object($time) && $time instanceof \DateTime) {
+            if (\is_object($time) && $time instanceof \DateTimeInterface) {
                 $time = $time->format('Y-m-d H:i:s');
             }
             $time = new Time($time);
