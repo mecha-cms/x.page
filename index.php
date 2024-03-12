@@ -8,9 +8,9 @@ namespace {
         return \Pages::from(...$lot);
     }
     // Initialize response variable(s)
-    $GLOBALS['page'] = new \Page;
-    $GLOBALS['pager'] = new \Pager;
-    $GLOBALS['pages'] = new \Pages;
+    \lot('page', new \Page);
+    \lot('pager', new \Pager);
+    \lot('pages', new \Pages);
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
     $path = \trim($url->path ?? "", '/');
@@ -70,7 +70,7 @@ namespace x\page {
         if (null !== $content) {
             return $content;
         }
-        \extract($GLOBALS, \EXTR_SKIP);
+        \extract(\lot(), \EXTR_SKIP);
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
@@ -99,8 +99,8 @@ namespace x\page {
             $deep = $page->deep ?? 0;
             $sort = $page->sort ?? [1, 'path'];
             $pages = \Pages::from($folder, 'page', $deep)->sort($sort);
-            $GLOBALS['page'] = $page;
-            $GLOBALS['t'][] = $page->title;
+            \lot('page', $page);
+            \lot('t')[] = $page->title;
             \State::set([
                 'chunk' => $chunk, // Inherit current page’s `chunk` property
                 'count' => $count = $pages->count, // Return the total number of page(s)
@@ -116,8 +116,8 @@ namespace x\page {
             $pager->hash = $hash;
             $pager->path = $path ?: $route;
             $pager->query = $query;
-            $GLOBALS['pager'] = $pager = $pager->chunk($chunk, $part);
-            $GLOBALS['pages'] = $pages = $pages->chunk($chunk, $part);
+            \lot('pager', $pager = $pager->chunk($chunk, $part));
+            \lot('pages', $pages = $pages->chunk($chunk, $part));
             $count = $pages->count; // Total number of page(s) after chunk
             \State::set([
                 'has' => [
@@ -150,7 +150,7 @@ namespace x\page {
                 'pages' => false
             ]
         ]);
-        $GLOBALS['t'][] = i('Error');
+        \lot('t')[] = \i('Error');
         return ['page', [], 404];
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
