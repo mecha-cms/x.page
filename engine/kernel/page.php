@@ -14,6 +14,9 @@ class Page extends File {
     }
 
     public function __call(string $kin, array $lot = []) {
+        if (parent::_($kin)) {
+            return parent::__call($kin, $lot);
+        }
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
