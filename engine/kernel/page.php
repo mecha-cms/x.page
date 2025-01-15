@@ -33,7 +33,7 @@ class Page extends File {
         return ($this->c[$kin . $hash] = $v);
     }
 
-    public function __construct(string $path = null, array $lot = []) {
+    public function __construct(?string $path = null, array $lot = []) {
         parent::__construct($path = $lot['path'] ?? $path);
         $this->c = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
@@ -272,7 +272,7 @@ class Page extends File {
         return null;
     }
 
-    public function time(string $format = null) {
+    public function time(?string $format = null) {
         $name = (string) $this->_name();
         // Set `time` value from the page’s file name
         if ($name && (
