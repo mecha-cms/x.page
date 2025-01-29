@@ -160,7 +160,9 @@ class Page extends File {
 
     public function offsetGet($key) {
         if ($this->_exist()) {
-            $path = $this->path;
+            if (0 === filesize($path = $this->path)) {
+                return null;
+            }
             // Prioritize data from a file…
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
             if (is_file($f = $folder . D . $key . '.data')) {
