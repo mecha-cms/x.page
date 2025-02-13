@@ -191,33 +191,54 @@ class Page extends File {
                 // Test for `{ asdf: asdf }` part in the stream
                 if ($v && '{' === $v[0]) {
                     $flow = true;
-                    $v = trim(substr(trim(strstr($v, '#', true) ?: $v), 1, -1));
+                    $v = trim(substr(trim($v), 1, -1));
                 }
                 // Test for `"asdf": asdf` part in the stream
-                if ($v && '"' === $v[0] && preg_match('/^"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v)) {
-                    $exist = true;
-                    break;
-                }
-                // Test for `'asdf': asdf` part in the stream
-                if ($v && "'" === $v[0] && preg_match("/^'" . x(strtr($key, ["'" => "''"])) . "'\\s*:/", $v)) {
-                    $exist = true;
-                    break;
-                }
-                // Test for `asdf: asdf` part in the stream
-                if ($v && $key === strtok($v, " :\n\t")) {
-                    $exist = true;
-                    break;
-                }
-                if (isset($flow) && false !== strpos($v, ',')) {
-                    $v = ' ' . strtr($v, ["\t" => ' ']) . ' ';
-                    if (
-                        false !== strpos($v, ' ' . $key . ':') ||
-                        preg_match('/\s' . x($key) . '\s*:/', $v) ||
-                        preg_match('/\s"' . x(strtr($key, ['"' => '\"'])) . '"\s*:/', $v) ||
-                        preg_match("/\\s'" . x(strtr($key, ["'" => "''"])) . "'\\s*:/", $v)
-                    ) {
+                if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
+                    $v = trim(substr($v, strlen($k)));
+                    if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
                         $exist = true;
                         break;
+                    }
+                }
+                // Test for `'asdf': asdf` part in the stream
+                if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
+                    $v = trim(substr($v, strlen($k)));
+                    if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        $exist = true;
+                        break;
+                    }
+                }
+                // Test for `asdf: asdf` part in the stream
+                if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
+                    if ($key === trim(substr($v, 0, $n))) {
+                        $exist = true;
+                        break;
+                    }
+                }
+                if (isset($flow) && false !== strpos($v, ',')) {
+                    if (false !== ($n = strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"'))) {
+                        $v = trim(substr($v, $n + strlen($k)));
+                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                            $exist = true;
+                            break;
+                        }
+                    }
+                    if (false !== ($n = strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'"))) {
+                        $v = trim(substr($v, $n + strlen($k)));
+                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                            echo '<pre style="border:1px solid">'.$v.'</pre>';
+                            exit;
+                            $exist = true;
+                            break;
+                        }
+                    }
+                    if (false !== ($n = strpos($v, $key))) {
+                        $v = trim(substr($v, $n + strlen($key)));
+                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                            $exist = true;
+                            break;
+                        }
                     }
                 }
             }
