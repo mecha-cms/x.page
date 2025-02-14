@@ -5,7 +5,7 @@ icon: 'M19 2L14 6.5V17.5L19 13V2M6.5 5C4.55 5 2.45 5.4 1 6.5V21.16C1 21.41 1.25 
 color: '#75522f'
 author: Taufik Nurrohman
 type: Markdown
-version: 3.1.5
+version: 3.1.6
 ...
 
 This extension uses the structure of the page file location in the `.\lot\page` folder to enable the basic functions of

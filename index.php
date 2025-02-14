@@ -13,9 +13,9 @@ namespace {
     \lot('pages', new \Pages);
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
-    $path = \trim($url->path ?? "", '/');
+    $n = \x\page\n($path = \trim($url->path ?? "", '/'));
     $route = \trim($state->route ?? 'index', '/');
-    $folder = \LOT . \D . 'page' . \D . (\preg_replace('/\/[1-9]\d*$/', "", $path) ?: $route);
+    $folder = \LOT . \D . 'page' . \D . (($n ? \substr($path, 0, -\strlen('/' . $n)) : $path) ?: $route);
     $parent = \dirname($folder);
     $has_pages = \q(\g($folder, 'page'));
     $has_parent = \exist([
@@ -42,7 +42,7 @@ namespace {
             'page' => $is_home || $is_page,
             'pages' => !!$has_pages,
             'parent' => $has_parent && false !== \strpos($path, '/'),
-            'part' => !!\preg_match('/\/[1-9]\d*$/', $path)
+            'part' => !!\x\page\n($path)
         ],
         'is' => [
             'error' => $is_error = ("" === $path && !$is_home || "" !== $path && !$is_page) ? 404 : false,
@@ -54,6 +54,14 @@ namespace {
 }
 
 namespace x\page {
+    // Returns the number string at the end of the `$path` as an integer if present, else returns `null`
+    function n($path) {
+        $n = \trim(\strrchr($path, '/') ?: $path, '/');
+        if ("" !== $n && '0' !== $n[0] && \strspn($n, '0123456789') === \strlen($n) && ($n = (int) $n) > 0) {
+            return $n;
+        }
+        return null;
+    }
     function route($content, $path, $query, $hash) {
         return \Hook::fire('route.page', [$content, $path, $query, $hash]);
     }
@@ -74,8 +82,8 @@ namespace x\page {
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
-        if ($path && \preg_match('/^(.*?)\/([1-9]\d*)$/', $path, $m)) {
-            [$any, $path, $part] = $m;
+        if ($part = n($path)) {
+            $path = \substr($path, 0, -\strlen('/' . $part));
             if (\exist([
                 $folder . '.archive',
                 $folder . '.page'
