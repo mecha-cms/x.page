@@ -111,6 +111,20 @@ class Page extends File {
         return null;
     }
 
+    public function children($x = 'page', $deep = 0) {
+        if (!$this->_exist()) {
+            return null;
+        }
+        if ($path = $this['children']) {
+            if (is_array($path) || is_string($path)) {
+                return Pages::from($path, $x, $deep);
+            }
+            return new Pages;
+        }
+        $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
+        return Pages::from($folder, $x, $deep);
+    }
+
     public function content(...$lot) {
         return $this->__call('content', $lot);
     }

@@ -32,7 +32,7 @@ namespace {
         $folder . '.archive',
         $folder . '.page'
     ], 1);
-    // Check if `pages` mode is disabled by a file like `.\lot\page\about\.page`
+    // Check if “pages” mode is disabled by a dot file such as `.\lot\page\about\.page`
     $not_pages = \exist([
         $folder . \D . '.archive',
         $folder . \D . '.page'
@@ -94,8 +94,8 @@ namespace x\page {
                 $folder = \dirname($folder);
             }
         }
-        $part = ((int) ($part ?? 1)) - 1;
-        if ($part < 1 && $route === $path && !$query) {
+        $part = ((int) ($part ?? 0)) - 1;
+        if ($part <= 0 && $route === $path && !$query) {
             \kick('/'); // Redirect to home page
         }
         if ($file = \exist([
@@ -106,43 +106,98 @@ namespace x\page {
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
             $sort = $page->sort ?? [1, 'path'];
-            $pages = \Pages::from($folder, 'page', $deep)->sort($sort);
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set([
                 'chunk' => $chunk, // Inherit current page’s `chunk` property
-                'count' => $count = $pages->count, // Return the total number of page(s)
                 'deep' => $deep, // Inherit current page’s `deep` property
                 'part' => $part + 1,
                 'sort' => $sort // Inherit current page’s `sort` property
             ]);
-            // No page(s) means “page” mode
-            if (0 === $count || \is_file($folder . \D . '.' . $page->x)) {
-                return ['page', [], 200];
+            if ($part >= 0) {
+                // The “pages” mode was disabled by an `.archive` or `.page` file
+                if (\is_file($folder . \D . '.' . $page->x)) {
+                    \kick('/' . $path);
+                }
+                $pages = $page->children('page', $deep)->sort($sort);
+                // A page “part” query was passed to the URL path, but this page has no sub-page(s). Treat it as a
+                // single page with error state because requesting sub-page(s) on a single page is not allowed.
+                if (0 === ($count = $pages->count)) { // Total number of page(s) before chunk
+                    \State::set([
+                        'has' => [
+                            'next' => false,
+                            'page' => false,
+                            'pages' => false,
+                            'parent' => true,
+                            'prev' => false
+                        ],
+                        'is' => [
+                            'error' => 404,
+                            'page' => true,
+                            'pages' => false
+                        ]
+                    ]);
+                    \lot('page', new \Page);
+                    \lot('t')[] = \i('Error');
+                    return ['page', [], 404];
+                }
+                $pager = \Pager::from($pages);
+                $pager->hash = $hash;
+                $pager->path = $path ?: $route;
+                $pager->query = $query;
+                \lot('pager', $pager = $pager->chunk($chunk, $part));
+                \lot('pages', $pages = $pages->chunk($chunk, $part));
+                if (0 === ($count = $pages->count)) { // Total number of page(s) after chunk
+                    \State::set([
+                        'has' => [
+                            'next' => false,
+                            'page' => true,
+                            'pages' => false,
+                            'parent' => !!$page->parent,
+                            'prev' => false
+                        ],
+                        'is' => [
+                            'error' => 404,
+                            'page' => false,
+                            'pages' => true
+                        ]
+                    ]);
+                    \lot('t')[] = \i('Error');
+                    return ['pages', [], 404];
+                }
+                \State::set([
+                    'count' => $count,
+                    'has' => [
+                        'next' => !!$pager->next,
+                        'page' => true,
+                        'pages' => true,
+                        'parent' => !!$page->parent,
+                        'part' => $part >= 0,
+                        'prev' => !!$pager->prev
+                    ],
+                    'is' => [
+                        'error' => false,
+                        'page' => false,
+                        'pages' => true
+                    ]
+                ]);
+                return ['pages', [], 200];
             }
-            $pager = \Pager::from($pages);
-            $pager->hash = $hash;
-            $pager->path = $path ?: $route;
-            $pager->query = $query;
-            \lot('pager', $pager = $pager->chunk($chunk, $part));
-            \lot('pages', $pages = $pages->chunk($chunk, $part));
-            $count = $pages->count; // Total number of page(s) after chunk
             \State::set([
                 'has' => [
-                    'next' => !!$pager->next,
+                    'next' => false,
                     'page' => true,
                     'pages' => true,
                     'parent' => !!$page->parent,
-                    'part' => !!($part + 1),
-                    'prev' => !!$pager->prev
+                    'prev' => false
                 ],
                 'is' => [
-                    'error' => $count ? false : 404,
-                    'page' => false,
-                    'pages' => true
+                    'error' => false,
+                    'page' => true,
+                    'pages' => false
                 ]
             ]);
-            return ['pages', [], $count ? 200 : 404];
+            return ['page', [], 200];
         }
         \State::set([
             'has' => [
