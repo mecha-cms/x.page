@@ -119,7 +119,11 @@ namespace x\page {
                 if (\is_file($folder . \D . '.' . $page->x)) {
                     \kick('/' . $path);
                 }
-                $pages = $page->children('page', $deep)->sort($sort);
+                if ($pages = $page->children('page', $deep)) {
+                    $pages = $pages->sort($sort);
+                } else {
+                    $pages = new \Pages;
+                }
                 // A page “part” query was passed to the URL path, but this page has no sub-page(s). Treat it as a
                 // single page with error state because requesting sub-page(s) on a single page is not allowed.
                 if (0 === ($count = $pages->count)) { // Total number of page(s) before chunk
