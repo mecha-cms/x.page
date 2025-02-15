@@ -121,7 +121,10 @@ class Page extends File {
             }
             return null;
         }
-        return Pages::from(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME), $x, $deep);
+        if (is_dir($folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME))) {
+            return Pages::from($folder, $x, $deep);
+        }
+        return null;
     }
 
     public function content(...$lot) {
@@ -282,19 +285,19 @@ class Page extends File {
             return null;
         }
         if ($path = $this['parent']) {
-            if (!is_string($path) || !is_file($path)) {
-                return null;
+            if (is_string($path) && is_file($path)) {
+                return new static($path, $lot);
             }
-            return new static($path, $lot);
+            return null;
         }
         $folder = dirname($this->path);
-        if (!$path = exist([
+        if ($path = exist([
             $folder . '.archive',
             $folder . '.page'
         ], 1)) {
-            return null;
+            return new static($path, $lot);
         }
-        return new static($path, $lot);
+        return null;
     }
 
     public function route(...$lot) {
