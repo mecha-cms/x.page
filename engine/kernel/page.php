@@ -6,11 +6,44 @@ class Page extends File {
     protected $h;
     protected $lot;
 
-    protected function _e($v) {
-        if ('null' === $v) {
+    protected function _e(string $v) {
+        if ('null' === ($v = trim($v))) {
             return null;
         }
-        return "" !== ($v = json_decode($v, true) ?? e($v)) ? $v : null;
+        if ("" !== ($v = json_decode($v, true) ?? e($v))) {
+            if (is_string($v) && $this->_q($v)) {
+                return From::YAML($v);
+            }
+        }
+        return $v;
+    }
+
+    // Verify that the YAML value is so basic (one line) that it can be parsed right away…
+    protected function _q(string $v) {
+        if (strlen($v) > 1) {
+            if ("'" === $v[0] && "'" === substr($v, -1)) {
+                return true;
+            }
+            if ('"' === $v[0] && '"' === substr($v, -1)) {
+                return true;
+            }
+            if ('[' === $v[0] && ']' === substr($v, -1) && false === strpos('[', $r = substr($v, 1, -1)) && false === strpos('{', $r)) {
+                return true;
+            }
+            if ('{' === $v[0] && '}' === substr($v, -1) && false === strpos('{', $r = substr($v, 1, -1)) && false === strpos('[', $r)) {
+                return true;
+            }
+        }
+        if (is_numeric($v) || false !== strpos(',false,null,true,~,', ',' . strtolower($v) . ',')) {
+            return true;
+        }
+        if ("" !== $v && false !== strpos('!&*>@`|', $v[0])) {
+            return false;
+        }
+        if (false !== ($n = strpos($v, '#')) && false !== strpos(" \n\t", substr($v, $n - 1, 1))) {
+            return false;
+        }
+        return false === (strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '));
     }
 
     public function __call(string $kin, array $lot = []) {
@@ -20,9 +53,9 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        $hash = $lot ? z($lot) : "";
-        if (array_key_exists($kin . $hash, $this->c)) {
-            return $this->c[$kin . $hash];
+        $hash = $lot ? '#' . md5(z($lot)) : "";
+        if (array_key_exists($k = $kin . $hash, $this->c)) {
+            return $this->c[$k];
         }
         $v = Hook::fire(map($this->h, static function ($v) use ($kin) {
             return $v .= '.' . $kin;
@@ -30,7 +63,7 @@ class Page extends File {
         if ($lot && is_callable($v) && !is_string($v)) {
             $v = call_user_func($v, ...$lot);
         }
-        return ($this->c[$kin . $hash] = $v);
+        return ($this->c[$k] = $v);
     }
 
     public function __construct(?string $path = null, array $lot = []) {
@@ -201,7 +234,7 @@ class Page extends File {
                     break;
                 }
                 // Has reached the `...\n` part in the stream means the end of the page header
-                if ("...\n" === $v) {
+                if ('...' === $v || "...\n" === $v) {
                     break;
                 }
                 // Test for `{ asdf: asdf }` part in the stream
@@ -213,6 +246,9 @@ class Page extends File {
                 if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        if ($this->_q($r = trim(substr($v, 1)))) {
+                            return $this->_e($r);
+                        }
                         $exist = true;
                         break;
                     }
@@ -221,6 +257,9 @@ class Page extends File {
                 if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        if ($this->_q($r = trim(substr($v, 1)))) {
+                            return $this->_e($r);
+                        }
                         $exist = true;
                         break;
                     }
@@ -228,6 +267,9 @@ class Page extends File {
                 // Test for `asdf: asdf` part in the stream
                 if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
                     if ($key === trim(substr($v, 0, $n))) {
+                        if ($this->_q($r = trim(substr($v, $n + 1)))) {
+                            return $this->_e($r);
+                        }
                         $exist = true;
                         break;
                     }
@@ -243,8 +285,6 @@ class Page extends File {
                     if (false !== ($n = strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'"))) {
                         $v = trim(substr($v, $n + strlen($k)));
                         if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
-                            echo '<pre style="border:1px solid">'.$v.'</pre>';
-                            exit;
                             $exist = true;
                             break;
                         }
