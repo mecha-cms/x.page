@@ -11,38 +11,42 @@ class Page extends File {
             return null;
         }
         if ("" !== ($v = json_decode($v, true) ?? e($v))) {
-            if (is_string($v) && $this->_q($v)) {
+            if (is_string($v) && $this->_s($v)) {
                 return From::YAML($v);
             }
         }
         return $v;
     }
 
-    // Verify that the YAML value is so basic (one line) that it can be parsed right away…
-    protected function _q(string $v) {
+    // Verify that the YAML value is so “simple” (one line) that it can be parsed right away…
+    protected function _s(string $v) {
+        // Empty value is not considered “simple”, because having an empty value after `:` is most likely an indication
+        // that there may be a child collection coming up on the next line, flag it as “not simple”!
+        if ("" === ($v = trim($v))) {
+            return false;
+        }
         if (strlen($v) > 1) {
-            if ("'" === $v[0] && "'" === substr($v, -1)) {
+            if ("'" === $v[0] && "'" === substr($v, -1) || '"' === $v[0] && '"' === substr($v, -1)) {
                 return true;
             }
-            if ('"' === $v[0] && '"' === substr($v, -1)) {
-                return true;
-            }
-            if ('[' === $v[0] && ']' === substr($v, -1) && false === strpos('[', $r = substr($v, 1, -1)) && false === strpos('{', $r)) {
-                return true;
-            }
-            if ('{' === $v[0] && '}' === substr($v, -1) && false === strpos('{', $r = substr($v, 1, -1)) && false === strpos('[', $r)) {
+            if ('[' === $v[0] && ']' === substr($v, -1) || '{' === $v[0] && '}' === substr($v, -1)) {
+                // Either a collection that contains a child collection, or a collection that contains a key or a value
+                // enclosed in quote(s) that contains a `[` or `{` character, will just flag it as “not simple”!
+                if (strspn($r = substr($v, 1, -1), '[{') !== strlen($r)) {
+                    return false;
+                }
                 return true;
             }
         }
-        if (is_numeric($v) || false !== strpos(',false,null,true,~,', ',' . strtolower($v) . ',')) {
-            return true;
-        }
-        if ("" !== $v && false !== strpos('!&*>@`|', $v[0])) {
+        // Anchored value, tagged value, and block scalar value (prefix) is not considered “simple”!
+        if ("" !== $v && false !== strpos('!&*>|', $v[0])) {
             return false;
         }
-        if (false !== ($n = strpos($v, '#')) && false !== strpos(" \n\t", substr($v, $n - 1, 1))) {
+        // A comment or a value followed by a comment is not considered “simple”!
+        if (false !== ($n = strpos($v, '#')) && (0 === $n || false !== strpos(" \n\t", substr($v, $n - 1, 1)))) {
             return false;
         }
+        // A “simple” value should not contain a `:` character followed by a white-space!
         return false === (strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '));
     }
 
@@ -246,8 +250,8 @@ class Page extends File {
                 if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
-                        if ($this->_q($r = trim(substr($v, 1)))) {
-                            return $this->_e($r);
+                        if ($this->_s($value = substr($v, 2))) {
+                            return $this->_e($value);
                         }
                         $exist = true;
                         break;
@@ -257,8 +261,8 @@ class Page extends File {
                 if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
-                        if ($this->_q($r = trim(substr($v, 1)))) {
-                            return $this->_e($r);
+                        if ($this->_s($value = substr($v, 2))) {
+                            return $this->_e($value);
                         }
                         $exist = true;
                         break;
@@ -267,8 +271,8 @@ class Page extends File {
                 // Test for `asdf: asdf` part in the stream
                 if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
                     if ($key === trim(substr($v, 0, $n))) {
-                        if ($this->_q($r = trim(substr($v, $n + 1)))) {
-                            return $this->_e($r);
+                        if ($this->_s($value = substr($v, $n + 2))) {
+                            return $this->_e($value);
                         }
                         $exist = true;
                         break;
