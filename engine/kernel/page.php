@@ -152,13 +152,13 @@ class Page extends File {
         if (!$this->_exist()) {
             return null;
         }
-        if ($path = $this['children']) {
-            if (is_array($path) || (is_string($path) && is_dir($path))) {
+        if ($v = $this->offsetGet('children')) {
+            if (is_array($v) || (is_string($v) && is_dir($v))) {
                 return Pages::from($path, $x, $deep);
             }
             return null;
         }
-        if (is_dir($folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME))) {
+        if (is_dir($folder = dirname($v = $this->path) . D . pathinfo($v, PATHINFO_FILENAME))) {
             return Pages::from($folder, $x, $deep);
         }
         return null;
@@ -328,18 +328,18 @@ class Page extends File {
         if (!$this->_exist()) {
             return null;
         }
-        if ($path = $this['parent']) {
-            if (is_string($path) && is_file($path)) {
-                return new static($path, $lot);
+        if ($v = $this->offsetGet('parent')) {
+            if (is_string($v) && is_file($v)) {
+                return new static($v, $lot);
             }
             return null;
         }
         $folder = dirname($this->path);
-        if ($path = exist([
+        if ($v = exist([
             $folder . '.archive',
             $folder . '.page'
         ], 1)) {
-            return new static($path, $lot);
+            return new static($v, $lot);
         }
         return null;
     }
