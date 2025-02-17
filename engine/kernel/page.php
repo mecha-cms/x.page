@@ -15,13 +15,13 @@ class Page extends File {
                 return From::YAML($v);
             }
         }
-        return $v;
+        return "" !== $v ? $v : null;
     }
 
-    // Verify that the YAML value is so “simple” (one line) that it can be parsed right away…
+    // Verify that the YAML value is so “simple” (one line) that it can be parsed right away!
     protected function _s(string $v) {
-        // Empty value is not considered “simple”, because having an empty value after `:` is most likely an indication
-        // that there may be a child collection coming up on the next line, flag it as “not simple”!
+        // Empty value is not considered “simple”. Having an empty value after `:` is most likely an indication that
+        // there may be a child collection coming up on the next stream. Mark it as “not simple”!
         if ("" === ($v = trim($v))) {
             return false;
         }
@@ -31,22 +31,27 @@ class Page extends File {
             }
             if ('[' === $v[0] && ']' === substr($v, -1) || '{' === $v[0] && '}' === substr($v, -1)) {
                 // Either a collection that contains a child collection, or a collection that contains a key or a value
-                // enclosed in quote(s) that contains a `[` or `{` character, will just flag it as “not simple”!
+                // enclosed in quote(s) that contains a `[` or `{` character. Just mark it as “not simple”!
                 if (strspn($r = substr($v, 1, -1), '[{') !== strlen($r)) {
                     return false;
                 }
                 return true;
             }
         }
-        // Anchored value, tagged value, and block scalar value (prefix) is not considered “simple”!
-        if ("" !== $v && false !== strpos('!&*>|', $v[0])) {
+        // Anchored value, tagged value, block scalar value (prefix), and a comment is not considered “simple”. A value
+        // that starts with an `@` or `` ` `` character is also considered “not simple”, since those two character(s)
+        // are currently reserved in YAML. In the future, they may have a special meaning, so it’s best to just mark
+        // them as “not simple” for now.
+        //
+        // <https://yaml.org/spec/1.2.2#example-invalid-use-of-reserved-indicators>
+        if ("" !== $v && false !== strpos('!#&*>@`|', $v[0])) {
             return false;
         }
-        // A comment or a value followed by a comment is not considered “simple”!
-        if (false !== ($n = strpos($v, '#')) && (0 === $n || false !== strpos(" \n\t", substr($v, $n - 1, 1)))) {
+        // A value followed by a comment is not considered “simple”.
+        if (($n = strpos($v, '#')) > 0 && false !== strpos(" \n\t", substr($v, $n - 1, 1))) {
             return false;
         }
-        // A “simple” value should not contain a `:` character followed by a white-space!
+        // A “simple” value should not contain a `:` character followed by a white-space.
         return false === (strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '));
     }
 
@@ -230,23 +235,24 @@ class Page extends File {
                 }
                 return ($this->lot[$key] = "" !== $content ? $content : null);
             }
-            // Stream page file content and make sure that the property exists before parsing
+            // Stream the file content one line at a time for optimization, check if the line contains a simple
+            // key-value pair. If so, stop the stream immediately, parse the value and then return it to save memory!
             $exist = false;
             foreach (stream($path) as $k => $v) {
-                // No `---\n` part at the start of the stream means no page header at all
+                // No `---\n` part at the start of the stream means no page header at all.
                 if (0 === $k && "---\n" !== $v && 3 !== strspn($v, '-')) {
                     break;
                 }
-                // Has reached the `...\n` part in the stream means the end of the page header
+                // Has reached the `...\n` part in the stream means the end of the page header.
                 if ('...' === $v || "...\n" === $v) {
                     break;
                 }
-                // Test for `{ asdf: asdf }` part in the stream
+                // Test for `{ asdf: asdf }` part in the stream…
                 if ($v && '{' === $v[0]) {
                     $flow = true;
                     $v = trim(substr(trim($v), 1, -1));
                 }
-                // Test for `"asdf": asdf` part in the stream
+                // Test for `"asdf": asdf` part in the stream…
                 if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
@@ -257,7 +263,7 @@ class Page extends File {
                         break;
                     }
                 }
-                // Test for `'asdf': asdf` part in the stream
+                // Test for `'asdf': asdf` part in the stream…
                 if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
                     $v = trim(substr($v, strlen($k)));
                     if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
@@ -268,7 +274,7 @@ class Page extends File {
                         break;
                     }
                 }
-                // Test for `asdf: asdf` part in the stream
+                // Test for `asdf: asdf` part in the stream…
                 if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
                     if ($key === trim(substr($v, 0, $n))) {
                         if ($this->_s($value = substr($v, $n + 2))) {
@@ -302,6 +308,8 @@ class Page extends File {
                     }
                 }
             }
+            // The key does exist, but the line is not a simple key-value pair, which means that the optimization could
+            // not be performed. And there we go, parsing the entire page content to get the accurate data.
             if ($exist) {
                 $lot = From::page(file_get_contents($path));
                 $this->lot = array_replace_recursive($this->lot ?? [], $lot);
@@ -313,7 +321,7 @@ class Page extends File {
     public function offsetSet($key, $value): void {
         if (isset($key)) {
             $this->lot[$key] = $value;
-            // Clear cache so that hook(s) can be executed again
+            // Clear cache so that hook(s) can be executed again!
             unset($this->c[$key]);
         } else {
             $this->lot[] = $value;
@@ -357,18 +365,34 @@ class Page extends File {
 
     public function time(?string $format = null) {
         $name = (string) $this->_name();
-        // Set `time` value from the page’s file name
-        if ($name && (
-            // `2017-04-21.page`
-            10 === strspn($name, '-0123456789') && 2 === substr_count($name, '-') ||
-            // `2017-04-21-14-25-00.page`
-            19 === strspn($name, '-0123456789') && 5 === substr_count($name, '-')
-        ) && preg_match('/^[1-9]\d{3,}-(0\d|1[0-2])-(0\d|[1-2]\d|3[0-1])(-([0-1]\d|2[0-4])(-([0-5]\d|60)){2})?$/', $name)) {
-            $time = new Time($name);
-        // Else…
-        } else {
+        // Set `time` value from the page’s file name.
+        if (($name = (string) $this->_name()) && '-' !== $name[0] && strspn($name, '-0123456789') === strlen($name)) {
+            $count = count($a = explode('-', $name));
+            if (3 === $count || 6 === $count) {
+                // Year
+                if (($n = (int) $a[0]) > 1969) {
+                    // Month
+                    if (($n = (int) $a[1]) > 0 && $n < 13) {
+                        // Day
+                        if (($n = (int) $a[2]) > 0 && $n < 32) {
+                            // Hour
+                            if (6 === $count && ($n = (int) $a[3]) > 0 && $n < 25) {
+                                // Minute
+                                if (($n = (int) $a[4]) > 0 && $n < 61) {
+                                    // Second
+                                    if (($n = (int) $a[5]) > 0 && $n < 61) {
+                                        $time = new Time($name);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (!isset($time)) {
             $time = $this->offsetGet('time') ?? parent::time();
-            if (\is_object($time) && $time instanceof \DateTimeInterface) {
+            if (is_object($time) && $time instanceof DateTimeInterface) {
                 $time = $time->format('Y-m-d H:i:s');
             }
             $time = new Time($time);
