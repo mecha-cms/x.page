@@ -75,7 +75,12 @@ class Page extends File {
         return ($this->c[$k] = $v);
     }
 
-    public function __construct(?string $path = null, array $lot = []) {
+    public function __construct($path = null, array $lot = []) {
+        // `new Page([ … ])`
+        if (is_iterable($path)) {
+            $lot = y($path);
+            $path = null;
+        }
         parent::__construct($path = $lot['path'] ?? $path);
         $this->c = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
@@ -409,9 +414,6 @@ class Page extends File {
     }
 
     public static function from(...$lot) {
-        if (is_iterable($v = reset($lot))) {
-            return new static(null, y($v));
-        }
         return new static(...$lot);
     }
 
