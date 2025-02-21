@@ -6,10 +6,10 @@ class Pager extends Pages {
     public $link;
     public $part;
 
-    public function __construct(iterable $value = [], string $join = ', ') {
+    public function __construct($lot = [], string $join = ', ') {
         $out = [];
         $page = $this->page();
-        foreach ($value as $k => $v) {
+        foreach ($lot as $k => $v) {
             if (is_object($v)) {
                 if (!is_a($v, get_class($page))) {
                     continue;
@@ -21,7 +21,7 @@ class Pager extends Pages {
                 $out[$k] = $v;
             }
         }
-        unset($value);
+        unset($lot);
         $this->chunk = 5;
         $this->link = new URL(lot('url') ?? '/');
         $this->part = 0;
@@ -55,13 +55,13 @@ class Pager extends Pages {
     }
 
     public function current($take = false) {
-        if (!$this->value) {
+        if (!$this->lot) {
             return null;
         }
         $chunk = $this->chunk;
         $part = $this->part;
         if ($take) {
-            $lot = $this->lot;
+            $lot = $this->parent ? $this->parent->lot : $this->lot;
             if (!$this->lot = array_slice($lot, 0, $chunk * $part, true) + array_slice($lot, $chunk * ($part + 1), null, true)) {
                 return null;
             }
@@ -78,7 +78,7 @@ class Pager extends Pages {
     public function data(): Traversable {
         $chunk = $this->chunk;
         $part = $this->part;
-        if ($last = ceil(count($this->lot) / $chunk)) {
+        if ($last = ceil(count($this->parent ? $this->parent->lot : $this->lot) / $chunk)) {
             for ($i = 0; $i < $last; ++$i) {
                 yield $i => $this->page(null, [
                     'current' => $i === $part,
@@ -94,11 +94,11 @@ class Pager extends Pages {
     }
 
     public function first($take = false) {
-        if (!$this->value) {
+        if (!$this->lot) {
             return null;
         }
         $chunk = $this->chunk;
-        $lot = $this->lot;
+        $lot = $this->parent ? $this->parent->lot : $this->lot;
         $part = $this->part;
         if ($take) {
             if (!$this->lot = array_slice($lot, $chunk, null, true)) {
@@ -115,11 +115,11 @@ class Pager extends Pages {
     }
 
     public function last($take = false) {
-        if (!$this->value) {
+        if (!$this->lot) {
             return null;
         }
         $chunk = $this->chunk;
-        $lot = $this->lot;
+        $lot = $this->parent ? $this->parent->lot : $this->lot;
         $part = $this->part;
         if ($take) {
             if (!$this->lot = array_slice($lot, 0, -(count($lot) % $chunk), true)) {
@@ -145,7 +145,7 @@ class Pager extends Pages {
 
     public function next($take = false) {
         $chunk = $this->chunk;
-        $lot = $this->lot;
+        $lot = $this->parent ? $this->parent->lot : $this->lot;
         $part = $this->part;
         if ($part >= ceil(count($lot) / $chunk) - 1) {
             return null;
@@ -171,7 +171,7 @@ class Pager extends Pages {
             return null;
         }
         if ($take) {
-            $lot = $this->lot;
+            $lot = $this->parent ? $this->parent->lot : $this->lot;
             if (!$this->lot = array_slice($lot, 0, $chunk * ($part - 1), true) + array_slice($lot, $chunk * $part, null, true)) {
                 return null;
             }

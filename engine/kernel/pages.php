@@ -3,6 +3,7 @@
 class Pages extends Anemone {
 
     protected $data = [];
+    protected $of = [];
 
     public function __get(string $key) {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
@@ -29,25 +30,14 @@ class Pages extends Anemone {
     }
 
     public function __serialize(): array {
-        $lot = parent::__serialize();
-        foreach (['lot', 'value'] as $key) {
-            if (empty($lot[$key])) {
-                continue;
-            }
-            foreach ($lot[$key] as &$v) {
-                if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
-                    if (!is_array($v) || !$v) {
-                        continue;
-                    }
-                    foreach ($v as &$vv) {
-                        if (!is_string($vv) || 0 !== strpos($v, PATH . D)) {
-                            continue;
-                        }
-                        $vv = strtr($vv, [PATH . D => ".\\", D => "\\"]);
-                    }
-                    unset($vv);
-                    continue;
-                }
+        $lot = get_object_vars($this);
+        unset($lot['parent']);
+        if ($of = $lot['of'] ?? 0) {
+            $lot['of'][0] = strtr($of[0], [PATH . D => ".\\", D => "\\"]);
+            $lot['lazy'] = true;
+            unset($lot['lot']);
+        } else if (is_array($lot['lot'] ?? 0)) {
+            foreach ($lot['lot'] as &$v) {
                 $v = strtr($v, [PATH . D => ".\\", D => "\\"]);
             }
             unset($v);
@@ -56,186 +46,164 @@ class Pages extends Anemone {
     }
 
     public function __toString(): string {
-        return serialize($this->__serialize()['value'] ?? []);
+        return ""; // TODO
     }
 
     public function __unserialize(array $lot): void {
-        foreach (['lot', 'value'] as $key) {
-            foreach ($lot[$key] as &$v) {
-                if (!is_string($v) || 0 !== strpos($v, ".\\")) {
-                    if (!is_array($v) || !$v) {
-                        continue;
+        if ($of = $lot['of'] ?? 0) {
+            $this->lazy = true;
+            $this->lot = function () use ($of) {
+                foreach (g(...$of) as $k => $v) {
+                    if ("" !== pathinfo($k, PATHINFO_FILENAME)) {
+                        yield $k;
                     }
-                    foreach ($v as &$vv) {
-                        if (!is_string($vv) || 0 !== strpos($v, ".\\")) {
-                            continue;
-                        }
-                        $vv = PATH . D . strtr(substr($vv, 2), ["\\" => D]);
-                    }
-                    unset($vv);
-                    continue;
                 }
+            };
+            $this->of[0] = $of[0] = PATH . D . strtr(substr($of[0], 2), ["\\" => D]);
+        } else if (is_array($lot['lot'] ?? 0)) {
+            $this->lazy = false;
+            foreach ($lot['lot'] as &$v) {
                 $v = PATH . D . strtr(substr($v, 2), ["\\" => D]);
             }
             unset($v);
+            $this->lot = $lot['lot'];
         }
-        parent::__unserialize($lot);
     }
 
     public function __unset(string $key): void {
         unset($this->data[$key]);
     }
 
-    public function find($fn) {
-        $fn = is_callable($fn) ? Closure::fromCallable($fn)->bindTo($this) : $fn;
-        return find($this->value, function ($v, $k) {
-            return call_user_func($fn, is_array($v) ? $this->page(null, $v) : $this->page($v), $k);
-        });
+    //public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
+    //}
+
+    public function find(callable $fn) {
+        return parent::find(that(function ($v, $k) use ($fn) {
+            return fire($fn, [$this->page($v), $k], $this);
+        }, $this));
     }
 
     public function first($take = false) {
-        if (null !== ($first = parent::first($take))) {
-            return is_array($first) ? $this->page(null, $first) : $this->page($first);
+        if (null !== ($v = parent::first($take))) {
+            return $this->page($v);
         }
-        return $first;
+        return $v;
     }
 
     public function getIterator(): Traversable {
-        foreach ($this->value as $k => $v) {
-            yield $k => is_array($v) ? $this->page(null, $v) : $this->page($v);
+        $lot = $this->lot;
+        $lot = $this->lazy ? fire($lot) : $lot;
+        foreach ($lot as $k => $v) {
+            yield $k => $this->page($v);
         }
     }
 
-    public function is($fn, $keys = false) {
-        $that = $this->mitose();
-        $that->value = is($that->value, function ($v, $k) use ($fn) {
-            if (!is_callable($fn) && null !== $fn) {
-                $fn = function ($v) use ($fn) {
-                    return $v === $fn;
-                };
-            }
-            return fire($fn, [is_array($v) ? $this->page(null, $v) : $this->page($v), $k], $this);
-        }, $keys);
-        return $that;
+    public function is(callable $fn, $keys = false) {
+        return parent::is(that(function ($v, $k) use ($fn) {
+            return fire($fn, [$this->page($v), $k], $this);
+        }, $this), $keys);
     }
 
     public function jsonSerialize() {
-        return $this->__serialize()['value'] ?? [];
+        return ""; // TODO
     }
 
     public function last($take = false) {
-        if (null !== ($last = parent::last($take))) {
-            return is_array($last) ? $this->page(null, $last) : $this->page($last);
+        if (null !== ($v = parent::last($take))) {
+            return $this->page($v);
         }
-        return $last;
+        return $v;
     }
 
     public function map(callable $fn) {
-        $that = $this->mitose();
-        $that->value = map($that->value, function ($v, $k) use ($fn) {
-            return fire($fn, [is_array($v) ? $this->page(null, $v) : $this->page($v), $k], $this);
-        });
-        return $that;
+        return parent::map(that(function ($v, $k) use ($fn) {
+            return fire($fn, [$this->page($v), $k], $this);
+        }, $this));
     }
 
-    public function not($fn, $keys = false) {
-        $that = $this->mitose();
-        $that->value = not($that->value, function ($v, $k) use ($fn) {
-            if (!is_callable($fn) && null !== $fn) {
-                $fn = function ($v) use ($fn) {
-                    return $v === $fn;
-                };
-            }
-            return fire($fn, [is_array($v) ? $this->page(null, $v) : $this->page($v), $k], $this);
-        }, $keys);
-        return $that;
+    public function not(callable $fn, $keys = false) {
+        return parent::not(that(function ($v, $k) use ($fn) {
+            return fire($fn, [$this->page($v), $k], $this);
+        }, $this), $keys);
     }
 
     public function offsetGet($key) {
-        return is_array($value = parent::offsetGet($key)) ? $this->page(null, $value) : $this->page($value);
+        if (null !== ($v = parent::offsetGet($key))) {
+            return $this->page($v);
+        }
+        return $v;
     }
 
     public function page(...$lot) {
-        return Page::from(...$lot);
+        if ($lot && ($v = reset($lot)) instanceof Page) {
+            return $v;
+        }
+        return new Page(...$lot);
     }
 
-    public function pluck(string $key, $value = null, $keys = false) {
-        $that = $this->mitose();
-        $out = [];
-        foreach ($that->value as $k => $v) {
-            $v = is_array($v) ? $this->page(null, $v) : $this->page($v);
-            $out[$k] = $v[$key] ?? $v->{$key} ?? $value;
-        }
-        $that->value = $keys ? $out : array_values($out);
-        return $that;
+    public function pluck(string $key, $value = null) {
+        return $this->map(function ($v) use ($key, $value) {
+            return $v->{$key} ?? $value;
+        });
     }
 
     public function sort($sort = 1, $keys = false) {
-        if (count($value = $this->value) <= 1) {
-            if (!$keys) {
-                $this->value = array_values($this->value);
-            }
-            return $this;
-        }
-        if (is_callable($sort)) {
-            $fn = (function ($a, $b) use ($sort) {
-                return fire($sort, [is_array($a) ? $this->page(null, $a) : $this->page($a), is_array($b) ? $this->page(null, $b) : $this->page($b)], $this);
-            })->bindTo($this);
-            $keys ? uasort($value, $fn) : usort($value, $fn);
-        } else if (is_array($sort)) {
-            $lot = $value = [];
-            if (isset($sort[1])) {
-                foreach ($this->value as $k => $v) {
-                    $f = is_array($v) ? $this->page(null, $v) : $this->page($v);
-                    if (is_array($v)) {
-                        $lot[$f->path] = $v;
-                        $lot[$f->path]['key'] = $k;
+        $lot = $this->lot;
+        $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
+        if ($this->lazy) {
+            $this->lot = that(function () use ($lot, $sort) {
+                $lot = fire($lot);
+                foreach ($lot as $k => $v) {
+                    $v = $this->page($v);
+                    $value = ['path' => $v->path];
+                    if ('path' !== $sort[1]) {
+                        $r = $v->{f2p($sort[1])} ?? $v[$sort[1]] ?? $sort[2];
+                        $value[$sort[1]] = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
                     }
-                    if (is_string($v = $f[$sort[1]] ?? $f->{$sort[1]} ?? $sort[2] ?? null)) {
-                        $v = strip_tags($v); // Ignore HTML tag(s)
-                    }
-                    $value[$f->path] = $v;
+                    yield $k => $value;
+                    unset($v);
                 }
-            }
-            -1 === $sort[0] ? arsort($value) : asort($value);
-            $this->value = [];
-            foreach (array_keys($value) as $v) {
-                if (empty($lot[$v])) {
-                    $this->value[] = $v;
-                    continue;
-                }
-                $lot[$v]['path'] = $v;
-                $k = $lot[$v]['key'] ?? null;
-                if ($keys && isset($k)) {
-                    $this->value[$k] = $lot[$v];
-                } else {
-                    $this->value[] = $lot[$v];
-                }
-            }
+            }, $this);
         } else {
-            $value = $this->value;
-            if ($keys) {
-                -1 === $sort ? arsort($value) : asort($value);
-            } else {
-                -1 === $sort ? rsort($value) : sort($value);
+            foreach ($lot as $k => $v) {
+                // TODO
             }
-            $this->value = $value;
         }
-        return $this;
+        return parent::sort($sort, $keys);
+    }
+
+    public function vote(callable $fn, $keys = false) {
+        return parent::vote(that(function ($v, $k) use ($fn) {
+            return fire($fn, [$this->page($v), $k], $this);
+        }, $this), $keys);
     }
 
     public static function from(...$lot) {
         if (is_iterable($v = reset($lot))) {
             return new static($v);
         }
-        $pages = [];
-        foreach (g($lot[0] ?? LOT . D . 'page', $lot[1] ?? 'page', $lot[2] ?? 0) as $k => $v) {
-            if ("" === pathinfo($k, PATHINFO_FILENAME)) {
-                continue; // Ignore placeholder page(s)
-            }
-            $pages[] = $k;
+        if (!is_string($v) || !is_dir($v)) {
+            return new static;
         }
-        return new static($pages);
+        $lot = array_replace([LOT . D . 'page', 'page', 0], $lot);
+        $lot[0] = path($lot[0]);
+        // $pages = new static(function () use ($lot) {
+        //     foreach (g(...$lot) as $k => $v) {
+        //         if ("" !== pathinfo($k, PATHINFO_FILENAME)) {
+        //             yield $k;
+        //         }
+        //     }
+        // });
+        $pages = new static((function ($r) use ($lot) {
+            foreach (g(...$lot) as $k => $v) {
+                if ("" !== pathinfo($k, PATHINFO_FILENAME)) {
+                    $r[] = $k;
+                }
+            }
+            return $r;
+        })([]));
+        $pages->of = $lot;
+        return $pages;
     }
 
 }

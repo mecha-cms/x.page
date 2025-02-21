@@ -12,7 +12,7 @@ class Page extends File {
         }
         if ("" !== ($v = json_decode($v, true) ?? e($v))) {
             if (is_string($v) && $this->_s($v)) {
-                return From::YAML($v);
+                return is_object($r = From::YAML($v)) && $r instanceof DateTimeInterface ? new Time($r->format('Y-m-d H:i:s')) : $r;
             }
         }
         return "" !== $v ? $v : null;
@@ -79,9 +79,9 @@ class Page extends File {
         // `new Page([ … ])`
         if (is_iterable($path)) {
             $lot = y($path);
-            $path = null;
+            $path = $lot['path'] ?? null;
         }
-        parent::__construct($path = $lot['path'] ?? $path);
+        parent::__construct($path);
         $this->c = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
             $this->h[] = $v = c2f($v);
@@ -223,13 +223,13 @@ class Page extends File {
 
     public function offsetGet($key) {
         if ($this->_exist()) {
-            if (0 === filesize($path = $this->path)) {
-                return null;
-            }
             // Prioritize data from a file…
-            $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
+            $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
             if (is_file($f = $folder . D . $key . '.data')) {
                 return ($this->lot[$key] = $this->_e(trim(file_get_contents($f))));
+            }
+            if (0 === filesize($path)) {
+                return null;
             }
             if ('content' === $key) {
                 $content = n(file_get_contents($path));
