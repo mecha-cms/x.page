@@ -252,6 +252,10 @@ class Page extends File {
                 if ('...' === $v || "...\n" === $v) {
                     break;
                 }
+                // Skip comment part…
+                if (0 === strpos($v, '#')) {
+                    continue;
+                }
                 // Test for `{ asdf: asdf }` part in the stream…
                 if ($v && '{' === $v[0]) {
                     $flow = true;
