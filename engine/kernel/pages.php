@@ -173,7 +173,8 @@ class Pages extends Anemone {
             $value = ['path' => $v->path];
             if ('path' !== $sort[1]) {
                 $r = $v->{f2p($sort[1])} ?? $v[$sort[1]] ?? $sort[2];
-                $value[$sort[1]] = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
+                $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
+                $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
             }
             $lot[++$k] = $value;
             unset($v);
@@ -200,6 +201,7 @@ class Pages extends Anemone {
         $lot[3] = false;
         $that = new static;
         $that->lot = new CallbackFilterIterator(g(...$lot), static function ($v) {
+            // Ignore dot file(s) such as `.archive` and `.page` file(s)
             return "" !== pathinfo($v, PATHINFO_FILENAME);
         });
         return $that;

@@ -6,26 +6,24 @@ class Pager extends Pages {
     public $link;
     public $part;
 
-    public function __construct($lot = [], string $join = ', ') {
-        $out = [];
+    public function __construct(iterable $lot = [], string $join = ', ') {
+        $i = 0;
         $page = $this->page();
-        foreach ($lot as $k => $v) {
-            if (is_object($v)) {
-                if (!is_a($v, get_class($page))) {
-                    continue;
-                }
-                $out[$k] = $v->path;
+        $r = new SplFixedArray(q($lot));
+        foreach ($lot as $v) {
+            if (is_object($v) && is_a($v, get_class($page))) {
+                $r[$i++] = $v->path;
             } else if ($v && is_string($v) && is_file($v)) {
-                $out[$k] = $v;
+                $r[$i++] = stream_resolve_include_path($v);
             } else if (is_array($v)) {
-                $out[$k] = $v;
+                $r[$i++] = $v['path'] ?? $v;
             }
         }
         unset($lot);
         $this->chunk = 5;
         $this->link = new URL(lot('url') ?? '/');
         $this->part = 0;
-        parent::__construct($out, $join);
+        parent::__construct($r, $join);
     }
 
     public function __get(string $key) {
@@ -55,18 +53,21 @@ class Pager extends Pages {
     }
 
     public function current($take = false) {
-        if (!$this->lot) {
+        if (!$this->count()) {
             return null;
         }
         $chunk = $this->chunk;
+        $parent = $this->parent;
         $part = $this->part;
         if ($take) {
-            $lot = $this->parent ? $this->parent->lot : $this->lot;
-            if (!$this->lot = array_slice($lot, 0, $chunk * $part, true) + array_slice($lot, $chunk * ($part + 1), null, true)) {
+            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
+            $lot = array_merge(array_slice($lot, 0, $chunk * $part), array_slice($lot, $chunk * ($part + 1)));
+            $this->lot = SplFixedArray::fromArray($lot);
+            if (!$lot) {
                 return null;
             }
         }
-        return $this->page(null, [
+        return $this->page([
             'current' => true,
             'description' => i('You are here'),
             'link' => $this->to($part + 1),
@@ -77,10 +78,12 @@ class Pager extends Pages {
 
     public function data(): Traversable {
         $chunk = $this->chunk;
+        $parent = $this->parent;
         $part = $this->part;
-        if ($last = ceil(count($this->parent ? $this->parent->lot : $this->lot) / $chunk)) {
-            for ($i = 0; $i < $last; ++$i) {
-                yield $i => $this->page(null, [
+        if ($count = ceil(count($parent ? $parent->lot : $this->lot) / $chunk)) {
+            $r = new SplFixedArray($count);
+            for ($i = 0; $i < $count; ++$i) {
+                $r[$i] = $this->page([
                     'current' => $i === $part,
                     'description' => i('Go to page %d', $i + 1),
                     'link' => $this->to($i + 1),
@@ -88,24 +91,27 @@ class Pager extends Pages {
                     'title' => i('Page %d', $i + 1)
                 ]);
             }
-        } else {
-            yield from [];
+            return $r;
         }
+        return new SplFixedArray(0);
     }
 
     public function first($take = false) {
-        if (!$this->lot) {
+        if (!$this->count()) {
             return null;
         }
         $chunk = $this->chunk;
-        $lot = $this->parent ? $this->parent->lot : $this->lot;
+        $parent = $this->parent;
         $part = $this->part;
         if ($take) {
-            if (!$this->lot = array_slice($lot, $chunk, null, true)) {
+            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
+            $lot = array_slice($lot, $chunk);
+            $this->lot = SplFixedArray::fromArray($lot);
+            if (!$lot) {
                 return null;
             }
         }
-        return $this->page(null, [
+        return $this->page([
             'current' => ($first = 1) === $part + 1,
             'description' => i('Go to the %s page', 'first'),
             'link' => $this->to($first),
@@ -119,15 +125,18 @@ class Pager extends Pages {
             return null;
         }
         $chunk = $this->chunk;
-        $lot = $this->parent ? $this->parent->lot : $this->lot;
+        $parent = $this->parent;
         $part = $this->part;
+        $count = count($lot = $parent ? $parent->lot : $this->lot);
         if ($take) {
-            if (!$this->lot = array_slice($lot, 0, -(count($lot) % $chunk), true)) {
+            $lot = array_slice($lot->toArray(), 0, -($count % $chunk));
+            $this->lot = SplFixedArray::fromArray($lot);
+            if (!$lot) {
                 return null;
             }
         }
-        return $this->page(null, [
-            'current' => ($last = ceil(count($lot) / $chunk)) === $part + 1,
+        return $this->page([
+            'current' => $part + 1 === ($last = ceil($count / $chunk)),
             'description' => i('Go to the %s page', 'last'),
             'link' => $this->to($last),
             'part' => $last,
@@ -145,17 +154,21 @@ class Pager extends Pages {
 
     public function next($take = false) {
         $chunk = $this->chunk;
-        $lot = $this->parent ? $this->parent->lot : $this->lot;
+        $parent = $this->parent;
         $part = $this->part;
-        if ($part >= ceil(count($lot) / $chunk) - 1) {
+        $count = count($lot = $parent ? $parent->lot : $this->lot);
+        if ($part >= ceil($count / $chunk) - 1) {
             return null;
         }
         if ($take) {
-            if (!$this->lot = array_slice($lot, 0, $chunk * ($part + 1), true) + array_slice($lot, $chunk * ($part + 2), null, true)) {
+            $lot = $lot->toArray();
+            $lot = array_merge(array_slice($lot, 0, $chunk * ($part + 1)), array_slice($lot, $chunk * ($part + 2)));
+            $this->lot = SplFixedArray::fromArray($lot);
+            if (!$lot) {
                 return null;
             }
         }
-        return $this->page(null, [
+        return $this->page([
             'current' => false,
             'description' => i('Go to the %s page', 'next'),
             'link' => $this->to($part + 2),
@@ -166,17 +179,20 @@ class Pager extends Pages {
 
     public function prev($take = false) {
         $chunk = $this->chunk;
+        $parent = $this->parent;
         $part = $this->part;
-        if ($part <= 0) {
+        if ($part < 1) {
             return null;
         }
         if ($take) {
-            $lot = $this->parent ? $this->parent->lot : $this->lot;
-            if (!$this->lot = array_slice($lot, 0, $chunk * ($part - 1), true) + array_slice($lot, $chunk * $part, null, true)) {
+            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
+            $lot = array_merge(array_slice($lot, 0, $chunk * ($part - 1)), array_slice($lot, $chunk * $part));
+            $this->lot = SplFixedArray::fromArray($lot);
+            if (!$lot) {
                 return null;
             }
         }
-        return $this->page(null, [
+        return $this->page([
             'current' => false,
             'description' => i('Go to the %s page', 'previous'),
             'link' => $this->to($part),
