@@ -21,7 +21,7 @@ class Pager extends Pages {
         }
         unset($lot);
         $this->chunk = 5;
-        $this->link = new URL(lot('url') ?? '/');
+        $this->link = lot('url');
         $this->part = 0;
         parent::__construct($r, $join);
     }
@@ -61,8 +61,8 @@ class Pager extends Pages {
         $part = $this->part;
         if ($take) {
             $lot = ($parent ? $parent->lot : $this->lot)->toArray();
-            $lot = array_merge(array_slice($lot, 0, $chunk * $part), array_slice($lot, $chunk * ($part + 1)));
-            $this->lot = SplFixedArray::fromArray($lot);
+            $lot = array_diff_key($lot, array_fill($chunk * $part, $chunk, null));
+            $this->lot = SplFixedArray::fromArray($lot, false);
             if (!$lot) {
                 return null;
             }
@@ -106,7 +106,7 @@ class Pager extends Pages {
         if ($take) {
             $lot = ($parent ? $parent->lot : $this->lot)->toArray();
             $lot = array_slice($lot, $chunk);
-            $this->lot = SplFixedArray::fromArray($lot);
+            $this->lot = SplFixedArray::fromArray($lot, false);
             if (!$lot) {
                 return null;
             }
@@ -130,7 +130,7 @@ class Pager extends Pages {
         $count = count($lot = $parent ? $parent->lot : $this->lot);
         if ($take) {
             $lot = array_slice($lot->toArray(), 0, -($count % $chunk));
-            $this->lot = SplFixedArray::fromArray($lot);
+            $this->lot = SplFixedArray::fromArray($lot, false);
             if (!$lot) {
                 return null;
             }
@@ -162,8 +162,8 @@ class Pager extends Pages {
         }
         if ($take) {
             $lot = $lot->toArray();
-            $lot = array_merge(array_slice($lot, 0, $chunk * ($part + 1)), array_slice($lot, $chunk * ($part + 2)));
-            $this->lot = SplFixedArray::fromArray($lot);
+            $lot = array_diff_key($lot, array_fill($chunk * ($part + 1), $chunk, null));
+            $this->lot = SplFixedArray::fromArray($lot, false);
             if (!$lot) {
                 return null;
             }
@@ -186,8 +186,8 @@ class Pager extends Pages {
         }
         if ($take) {
             $lot = ($parent ? $parent->lot : $this->lot)->toArray();
-            $lot = array_merge(array_slice($lot, 0, $chunk * ($part - 1)), array_slice($lot, $chunk * $part));
-            $this->lot = SplFixedArray::fromArray($lot);
+            $lot = array_diff_key($lot, array_fill($chunk * ($part - 1), $chunk, null));
+            $this->lot = SplFixedArray::fromArray($lot, false);
             if (!$lot) {
                 return null;
             }

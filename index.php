@@ -7,7 +7,7 @@ namespace {
     function pages(...$lot) {
         return \Pages::from(...$lot);
     }
-    // Initialize response variable(s)
+    // Initialize layout variable(s)
     \lot('page', new \Page);
     \lot('pager', new \Pager);
     \lot('pages', new \Pages);
