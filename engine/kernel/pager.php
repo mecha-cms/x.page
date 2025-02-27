@@ -91,9 +91,9 @@ class Pager extends Pages {
                     'title' => i('Page %d', $i + 1)
                 ]);
             }
-            return $r;
+            return new Anemone($r);
         }
-        return new SplFixedArray(0);
+        return new Anemone;
     }
 
     public function first($take = false) {

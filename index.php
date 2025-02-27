@@ -2,10 +2,10 @@
 
 namespace {
     function page(...$lot) {
-        return \Page::from(...$lot);
+        return new \Page(...$lot);
     }
     function pages(...$lot) {
-        return \Pages::from(...$lot);
+        return new \Pages(...$lot);
     }
     // Initialize layout variable(s)
     \lot('page', new \Page);
@@ -94,7 +94,7 @@ namespace x\page {
                 $folder = \dirname($folder);
             }
         }
-        $part = ((int) ($part ?? 0)) - 1;
+        $part = ($part ?? 0) - 1;
         if ($part <= 0 && $route === $path && !$query) {
             \kick('/'); // Redirect to home page
         }
@@ -105,7 +105,7 @@ namespace x\page {
             $page = new \Page($file);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
-            $sort = $page->sort ?? [1, 'path'];
+            $sort = \array_replace([1, 'path'], (array) ($page->sort ?? []));
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set([
@@ -145,6 +145,7 @@ namespace x\page {
                     \lot('t')[] = \i('Error');
                     return ['page', [], 404];
                 }
+                \State::set('count', $count);
                 $pager = \Pager::from($pages);
                 $pager->hash = $hash;
                 $pager->path = $path ?: $route;
@@ -158,6 +159,7 @@ namespace x\page {
                             'page' => true,
                             'pages' => false,
                             'parent' => !!$page->parent,
+                            'part' => $part >= 0,
                             'prev' => false
                         ],
                         'is' => [
@@ -170,7 +172,6 @@ namespace x\page {
                     return ['pages', [], 404];
                 }
                 \State::set([
-                    'count' => $count,
                     'has' => [
                         'next' => !!$pager->next,
                         'page' => true,
