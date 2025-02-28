@@ -169,15 +169,16 @@ class Pages extends Anemone {
         $lot = new SplFixedArray($this->count());
         $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
         foreach ($this->lot as $v) {
-            $v = $this->page($v);
-            $value = ['path' => $v->path];
+            $r = $this->page($v);
+            $value = is_array($v) ? $v : [];
+            $value['path'] = $r->path;
             if ('path' !== $sort[1]) {
-                $r = $v->{f2p($sort[1])} ?? $v[$sort[1]] ?? $sort[2];
+                $r = $r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2];
                 $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
                 $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
             }
             $lot[++$k] = $value;
-            unset($v);
+            unset($r, $v);
         }
         $this->lot = $lot;
         return parent::sort($sort, $keys);
