@@ -153,7 +153,11 @@ class Pages extends Anemone {
     }
 
     public function pluck(string $key, $value = null) {
-        return $this->map(function ($v) use ($key, $value) {
+        $dot = false !== strpos(strtr($key, ["\\." => P]), '.');
+        return $this->map(function ($v) use ($dot, $key, $value) {
+            if ($dot && is_iterable($v)) {
+                return get($v, $key) ?? $value;
+            }
             return $v->{f2p($key)} ?? $v[$key] ?? $value;
         });
     }
@@ -168,12 +172,13 @@ class Pages extends Anemone {
         $k = -1;
         $lot = new SplFixedArray($this->count());
         $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
+        $dot = false !== strpos(strtr($sort[1], ["\\." => P]), '.');
         foreach ($this->lot as $v) {
             $r = $this->page($v);
             $value = is_array($v) ? $v : [];
             $value['path'] = $r->path;
             if ('path' !== $sort[1]) {
-                $r = $r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2];
+                $r = $dot ? (get($r, $sort[1]) ?? $sort[2]) : ($r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2]);
                 $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
                 $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
             }
