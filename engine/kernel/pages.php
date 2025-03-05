@@ -170,10 +170,10 @@ class Pages extends Anemone {
 
     public function sort($sort = 1, $keys = false) {
         $k = -1;
-        $lot = new SplFixedArray($this->count());
+        $lot = $keys ? new ArrayIterator : new SplFixedArray($this->count());
         $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
         $dot = false !== strpos(strtr($sort[1], ["\\." => P]), '.');
-        foreach ($this->lot as $v) {
+        foreach ($this->lot as $key => $v) {
             $r = $this->page($v);
             $value = is_array($v) ? $v : [];
             $value['path'] = $r->path;
@@ -182,7 +182,7 @@ class Pages extends Anemone {
                 $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
                 $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
             }
-            $lot[++$k] = $value;
+            $lot[$keys ? $key : ++$k] = $value;
             unset($r, $v);
         }
         $this->lot = $lot;
