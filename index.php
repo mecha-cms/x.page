@@ -13,7 +13,7 @@ namespace {
     \lot('pages', new \Pages);
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
-    $n = \x\page\n($path = \trim($url->path ?? "", '/'));
+    $n = \x\page\n($path = \trim($url->path ?? $state->route ?? "", '/'));
     $route = \trim($state->route ?? 'index', '/');
     $folder = \LOT . \D . 'page' . \D . (($n ? \substr($path, 0, -\strlen('/' . $n)) : $path) ?: $route);
     $parent = \dirname($folder);
@@ -82,13 +82,15 @@ namespace x\page {
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
-        if ($part = n($path)) {
+        if ($part = n($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
+            $route = \substr($route, 0, -\strlen('/' . $part));
             if (\exist([
                 $folder . '.archive',
                 $folder . '.page'
             ], 1)) {
                 $path .= '/' . $part;
+                $route .= '/' . $part;
                 unset($part);
             } else {
                 $folder = \dirname($folder);
