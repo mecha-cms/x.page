@@ -13,9 +13,9 @@ namespace {
     \lot('pages', new \Pages);
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
-    $n = \x\page\n($path = \trim($url->path ?? $state->route ?? "", '/'));
+    $part = \x\page\part($path = \trim($url->path ?? $state->route ?? "", '/'));
     $route = \trim($state->route ?? 'index', '/');
-    $folder = \LOT . \D . 'page' . \D . (($n ? \substr($path, 0, -\strlen('/' . $n)) : $path) ?: $route);
+    $folder = \LOT . \D . 'page' . \D . (($part ? \substr($path, 0, -\strlen('/' . $part)) : $path) ?: $route);
     $parent = \dirname($folder);
     $has_pages = \q(\g($folder, 'page'));
     $has_parent = \exist([
@@ -42,7 +42,7 @@ namespace {
             'page' => $is_home || $is_page,
             'pages' => !!$has_pages,
             'parent' => $has_parent && false !== \strpos($path, '/'),
-            'part' => !!\x\page\n($path)
+            'part' => !!\x\page\part($path)
         ],
         'is' => [
             'error' => $is_error = ("" === $path && !$is_home || "" !== $path && !$is_page) ? 404 : false,
@@ -55,10 +55,10 @@ namespace {
 
 namespace x\page {
     // Returns the number string at the end of the `$path` as an integer if present, else returns `null`
-    function n($path) {
-        $n = \trim(\strrchr($path, '/') ?: $path, '/');
-        if ("" !== $n && '0' !== $n[0] && \strspn($n, '0123456789') === \strlen($n) && ($n = (int) $n) > 0) {
-            return $n;
+    function part($path) {
+        $part = \trim(\strrchr($path, '/') ?: $path, '/');
+        if ("" !== $part && '0' !== $part[0] && \strspn($part, '0123456789') === \strlen($part) && ($part = (int) $part) > 0) {
+            return $part;
         }
         return null;
     }
@@ -82,7 +82,7 @@ namespace x\page {
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
         $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
-        if ($part = n($path ?: $route)) {
+        if ($part = part($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
             $route = \substr($route, 0, -\strlen('/' . $part));
             if (\exist([
