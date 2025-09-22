@@ -164,7 +164,7 @@ class Page extends File {
         }
         if ($v = $this->offsetGet('children')) {
             if (is_array($v) || (is_string($v) && is_dir($v))) {
-                return Pages::from($path, $x, $deep);
+                return Pages::from($v, $x, $deep);
             }
             return null;
         }
