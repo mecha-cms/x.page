@@ -38,7 +38,7 @@ class Pager extends Pages {
     }
 
     public function __set(string $key, $value): void {
-        if (false !== strpos(',hash,host,path,port,protocol,query,', ',' . $key . ',')) {
+        if (false !== strpos(',hash,host,path,port,query,scheme,', ',' . $key . ',')) {
             $this->link->{$key} = $value;
         } else {
             $this->{$key} = $value;
