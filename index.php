@@ -13,42 +13,14 @@ namespace {
     \lot('pages', new \Pages);
     // Set page’s condition data as early as possible, so that other
     // extension(s) can use it without having to enter the `route` hook
-    $part = \x\page\part($path = \trim($url->path ?? $state->route ?? "", '/'));
+    $part = \x\page\part($r = \trim($url->path ?? $state->route ?? 'index', '/'));
     $route = \trim($state->route ?? 'index', '/');
-    $folder = \LOT . \D . 'page' . \D . (($part ? \substr($path, 0, -\strlen('/' . $part)) : $path) ?: $route);
-    $parent = \dirname($folder);
-    $has_pages = \q(\g($folder, 'page'));
-    $has_parent = \exist([
-        $parent . '.archive',
-        $parent . '.page',
-        $parent . \D . '.archive',
-        $parent . \D . '.page'
-    ], 1);
-    $is_home = "" === $path || $route === $path ? \exist([
-        $folder . '.archive',
-        $folder . '.page'
-    ], 1) : false;
-    $is_page = \exist([
-        $folder . '.archive',
-        $folder . '.page'
-    ], 1);
-    // Check if “pages” mode is disabled by a dot file such as `.\lot\page\about\.page`
-    $not_pages = \exist([
-        $folder . \D . '.archive',
-        $folder . \D . '.page'
-    ], 1);
     \State::set([
-        'has' => [
-            'page' => $is_home || $is_page,
-            'pages' => !!$has_pages,
-            'parent' => $has_parent && false !== \strpos($path, '/'),
-            'part' => !!\x\page\part($path)
-        ],
+        'has' => ['part' => !!$part],
         'is' => [
-            'error' => $is_error = ("" === $path && !$is_home || "" !== $path && !$is_page) ? 404 : false,
-            'home' => !!$is_home,
-            'page' => $is_home || ($is_page && ($not_pages || !$has_pages)),
-            'pages' => $has_pages && !$not_pages
+            'home' => "" === $r || $route === $r,
+            'page' => !$part,
+            'pages' => !!$part
         ]
     ]);
 }
