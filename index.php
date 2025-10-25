@@ -85,21 +85,15 @@ namespace x\page {
             $folder . '.archive',
             $folder . '.page'
         ], 1)) {
-            $page = new \Page($file);
+            $page = new \Page($file, ['part' => $part + 1]);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
             $sort = \array_replace([1, 'path'], (array) ($page->sort ?? []));
             \lot('page', $page);
             \lot('t')[] = $page->title;
-            \State::set([
-                'chunk' => $chunk, // Inherit current page’s `chunk` property
-                'deep' => $deep, // Inherit current page’s `deep` property
-                'has' => [
-                    'pages' => $part < 0 && \q($page->children('page')) > 0,
-                    'parent' => !!$page->parent
-                ],
-                'part' => $part + 1,
-                'sort' => $sort // Inherit current page’s `sort` property
+            \State::set('has', [
+                'pages' => $part < 0 && \q($page->children('page')) > 0,
+                'parent' => !!$page->parent
             ]);
             if ($part >= 0) {
                 // The “pages” view was disabled by an `.archive` or `.page` file
@@ -111,14 +105,13 @@ namespace x\page {
                 } else {
                     $pages = new \Pages;
                 }
-                \State::set('count', \q($pages)); // Total number of page(s) before chunk
                 $pager = \Pager::from($pages);
                 $pager->hash = $hash;
                 $pager->path = $path ?: $route;
                 $pager->query = $query;
                 \lot('pager', $pager = $pager->chunk($chunk, $part));
                 \lot('pages', $pages = $pages->chunk($chunk, $part));
-                if (0 === ($count = \q($pages))) { // Total number of page(s) after chunk
+                if (0 === ($count = \q($pages))) {
                     \lot('t')[] = \i('Error');
                 }
                 \State::set([
