@@ -173,14 +173,14 @@ These page conditional statements are available to quickly determine the type of
 `$site->has('next')`
 : Returns `true` if it is possible to go to the next page.
 
-`$site->has('page')`
-: Returns `true` if there is a page to load.
-
 `$site->has('pages')`
-: Returns `true` if there are pages to load.
+: Returns `true` on “item” page view, if `$page->children` is not empty.
 
 `$site->has('parent')`
-: Returns `true` if current page has parent page.
+: Returns `true` if the current page has a parent page.
+
+`$site->has('part')`
+: Returns `true` on “items” page view.
 
 `$site->has('prev')`
 : Returns `true` if it is possible to go to the previous page.
@@ -192,7 +192,10 @@ These page conditional statements are available to quickly determine the type of
 : Returns `true` on home page.
 
 `$site->is('page')`
-: Returns `true` on single page view.
+: Returns `true` on “item” page view.
 
 `$site->is('pages')`
-: Returns `true` on multiple page view.
+: Returns `true` on “items” page view.
+
+`$site->with('pages')`
+: Returns `true` on “items” page view, if `$pages` is not empty.
