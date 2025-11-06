@@ -3,8 +3,8 @@
 class Pager extends Pages {
 
     public $chunk;
-    public $link;
     public $part;
+    public $r;
 
     public function __construct(iterable $lot = [], string $join = ', ') {
         $i = 0;
@@ -21,8 +21,8 @@ class Pager extends Pages {
         }
         unset($lot);
         $this->chunk = 5;
-        $this->link = lot('url');
         $this->part = 0;
+        $this->r = lot('url');
         parent::__construct($r, $join);
     }
 
@@ -30,7 +30,7 @@ class Pager extends Pages {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
-        return parent::_($key) ? $this->__call($key) : $this->link->{$key};
+        return parent::_($key) ? $this->__call($key) : $this->r->{$key};
     }
 
     public function __isset(string $key): bool {
@@ -39,7 +39,7 @@ class Pager extends Pages {
 
     public function __set(string $key, $value): void {
         if (false !== strpos(',hash,host,path,port,query,scheme,', ',' . $key . ',')) {
-            $this->link->{$key} = $value;
+            $this->r->{$key} = $value;
         } else {
             $this->{$key} = $value;
         }
@@ -146,7 +146,7 @@ class Pager extends Pages {
 
     public function mitose() {
         $that = parent::mitose();
-        foreach (['chunk', 'link', 'part'] as $k) {
+        foreach (['chunk', 'part', 'r'] as $k) {
             $that->{$k} = $this->{$k};
         }
         return $that;
@@ -210,10 +210,10 @@ class Pager extends Pages {
             return null;
         }
         $hash = $this->hash ?? "";
-        $link = $this->link ?? "";
         $path = $this->path ?? "";
         $query = $this->query ?? "";
-        return $link . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
+        $r = $this->r ?? "";
+        return $r . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
     }
 
 }
