@@ -22,7 +22,7 @@ class Pager extends Pages {
         unset($lot);
         $this->chunk = 5;
         $this->part = 0;
-        $this->r = lot('url');
+        $this->r = new URL(long('/'));
         parent::__construct($r, $join);
     }
 
