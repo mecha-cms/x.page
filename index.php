@@ -34,14 +34,6 @@ namespace {
 }
 
 namespace x\page {
-    // Returns the number string at the end of the `$path` as an integer if present, else returns `null`
-    function part($path) {
-        $part = \trim(\strrchr($path, '/') ?: $path, '/');
-        if ("" !== $part && '0' !== $part[0] && \strspn($part, '0123456789') === \strlen($part) && ($part = (int) $part) > 0) {
-            return $part;
-        }
-        return null;
-    }
     function route($content, $path, $query, $hash) {
         return \Hook::fire('route.page', [$content, $path, $query, $hash]);
     }
