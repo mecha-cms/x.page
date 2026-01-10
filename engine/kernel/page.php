@@ -390,7 +390,7 @@ class Page extends File {
                                 if (($n = (int) $a[4]) > 0 && $n < 61) {
                                     // Second
                                     if (($n = (int) $a[5]) > 0 && $n < 61) {
-                                        $time = new Time($name);
+                                        $t = new Time($name);
                                     }
                                 }
                             }
@@ -399,14 +399,14 @@ class Page extends File {
                 }
             }
         }
-        if (!isset($time)) {
-            $time = $this->offsetGet('time') ?? parent::time();
-            if (is_object($time) && $time instanceof DateTimeInterface) {
-                $time = $time->format('Y-m-d H:i:s');
+        if (!isset($t)) {
+            $t = $this->offsetGet('time') ?? parent::time();
+            if (is_object($t) && $t instanceof DateTimeInterface) {
+                $t = $t->format('Y-m-d H:i:s');
             }
-            $time = new Time($time);
+            $t = new Time($t);
         }
-        return $format ? $time($format) : $time;
+        return $format ? $t($format) : $t;
     }
 
     public function type(...$lot) {
