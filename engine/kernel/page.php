@@ -226,7 +226,7 @@ class Page extends File {
             // Prioritize data from a file…
             $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
             if (is_file($f = $folder . D . $key . '.data')) {
-                return ($this->lot[$key] = $this->_e(trim(file_get_contents($f))));
+                return 0 !== filesize($f) ? ($this->lot[$key] = $this->_e(trim(file_get_contents($f)))) : null;
             }
             if (0 === filesize($path)) {
                 return null;
