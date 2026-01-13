@@ -153,12 +153,9 @@ class Pages extends Anemone {
     }
 
     public function pluck(string $key, $value = null) {
-        $dot = false !== strpos(strtr($key, ["\\." => P]), '.');
-        return $this->map(function ($v) use ($dot, $key, $value) {
-            if ($dot && is_iterable($v)) {
-                return get($v, $key) ?? $value;
-            }
-            return $v->{f2p($key)} ?? $v[$key] ?? $value;
+        $deep = false !== strpos(strtr($key, ["\\." => P]), '.');
+        return $this->map(function ($v) use ($deep, $key, $value) {
+            return $deep && is_iterable($v) ? (get($v, $key) ?? $value) : ($v->{f2p($key)} ?? $v[$key] ?? $value);
         });
     }
 
@@ -172,13 +169,17 @@ class Pages extends Anemone {
         $k = -1;
         $lot = $keys ? new ArrayIterator : new SplFixedArray($this->count());
         $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
-        $dot = false !== strpos(strtr($sort[1], ["\\." => P]), '.');
+        // Make sure the sort key is safe and don’t let user(s) put in key(s) like `__construct`
+        if (0 === strpos($sort[1], '__')) {
+            return $this;
+        }
+        $deep = false !== strpos(strtr($sort[1], ["\\." => P]), '.');
         foreach ($this->lot as $key => $v) {
             $r = $this->page($v);
             $value = is_array($v) ? $v : [];
             $value['path'] = $r->path;
             if ('path' !== $sort[1]) {
-                $r = $dot ? (get($r, $sort[1]) ?? $sort[2]) : ($r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2]);
+                $r = $deep ? (get($r, $sort[1]) ?? $sort[2]) : ($r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2]);
                 $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
                 $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
             }
