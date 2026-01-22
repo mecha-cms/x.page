@@ -143,9 +143,7 @@ class Page extends File {
     }
 
     public function ID(...$lot) {
-        $t = $this->time()->format('U');
-        $id = $this->__call('id', $lot) ?? ($t ? sprintf('%u', $t) : null);
-        return is_numeric($id) ? (int) $id : $id;
+        return $this->__call('id', $lot) ?? ((int) $this->time()->format('U'));
     }
 
     public function URL(...$lot) {
