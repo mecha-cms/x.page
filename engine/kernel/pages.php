@@ -4,7 +4,7 @@ class Pages extends Anemone {
 
     protected $data = [];
 
-    public function __get(string $key) {
+    public function __get(string $key): mixed {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
@@ -115,7 +115,7 @@ class Pages extends Anemone {
         }, $this), $keys);
     }
 
-    public function jsonSerialize() {
+    public function jsonSerialize(): mixed {
         return $this->__serialize()['lot'] ?? [];
     }
 
@@ -138,7 +138,7 @@ class Pages extends Anemone {
         }, $this), $keys);
     }
 
-    public function offsetGet($key) {
+    public function offsetGet($key): mixed {
         if (null !== ($v = parent::offsetGet($key))) {
             return $this->page($v);
         }

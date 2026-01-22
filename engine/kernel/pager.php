@@ -26,7 +26,7 @@ class Pager extends Pages {
         parent::__construct($r, $join);
     }
 
-    public function __get(string $key) {
+    public function __get(string $key): mixed {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }

@@ -211,7 +211,7 @@ class Page extends File {
         }
     }
 
-    public function jsonSerialize() {
+    public function jsonSerialize(): mixed {
         return y($this->getIterator());
     }
 
@@ -219,7 +219,7 @@ class Page extends File {
         return $this->lot['name'] ?? $this->_name(...$lot);
     }
 
-    public function offsetGet($key) {
+    public function offsetGet($key): mixed {
         if ($this->_exist()) {
             // Prioritize data from a file…
             $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
