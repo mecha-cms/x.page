@@ -1,74 +1,223 @@
 <?php
 
-$files = []; // g(LOT, 'archive,data,draft,page', true);
+if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?? 0)) {
+    // echo '<pre>';
+    // echo json_encode($r, JSON_PRETTY_PRINT);
+    // echo '</pre>';
+    // exit;
+    if (!empty($r['state']['keep'])) {
+        foreach ($r['files'][0] as $k => $v) {
+            if (!is_file($f = path(LOT . $k))) {
+                throw new RuntimeException('Not a file: `' . $f . '`');
+            }
+            $ff = LOT . D . 'trash' . D . date('Y-m-d') . D . 'lot' . strtr($k, ['/' => D]);
+            if (!is_dir($d = dirname($ff)) && !mkdir($d, 0700, true) && !is_dir($d)) {
+                throw new RuntimeException('Failed to create folder: `' . $d . '`');
+            }
+            if (!isset($r['files'][1][$k])) {
+                if (!copy($f, $ff)) {
+                    throw new RuntimeException('Failed to copy file: `' . $f . '`');
+                }
+            } else {
+                if (!rename($f, $ff)) {
+                    throw new RuntimeException('Failed to move file: `' . $f . '`');
+                }
+            }
+            chmod($ff, 0600);
+        }
+    }
+    foreach ($r['files'][1] as $k => $v) {
+        $x = pathinfo($k, PATHINFO_EXTENSION);
+        if ('data' === $x) {
+            // TODO: Convert page’s data here
+        } else {
+            // TODO: Convert page here
+        }
+    }
+    kick('?next=true&x=' . ($r['state']['x'] ?? 'txt'));
+}
+
+$chunk = 100; // Limit to 100 file(s) for each conversion to avoid reaching PHP’s default `max_input_vars` value
+
+$lot = y(is(g(LOT, 'archive,data,draft,page', true), function ($v, $k) {
+    if (0 === strpos($k, LOT . D . 'trash' . D) || 0 === strpos($k, LOT . D . 'x' . D) || 0 === strpos($k, LOT . D . 'y' . D)) {
+        return false;
+    }
+    return true;
+}));
+
+if (!($count = count($lot))) {
+    return;
+}
 
 $r = "";
 
+$r .= '<!DOCTYPE html>';
+$r .= '<html dir="ltr">';
+$r .= '<head>';
+$r .= '<meta content="width=device-width" name="viewport">';
+$r .= '<title>.\\lot\\x\\page\\*</title>';
 $r .= '<style>';
-$r .= <<<CSS
+$r .= <<<'CSS'
+:root {
+  margin: 0;
+  padding: 2em;
+}
+body {
+  margin: 0;
+  padding: 0;
+}
 main {
   margin-left: auto;
   margin-right: auto;
-  max-width: 900px;
+  max-width: 800px;
+}
+pre .key {
+  color: #900;
+}
+pre .mta {
+  color: #009;
+}
+pre .val {
+  color: #060;
+}
+button, select, summary {
+  cursor: pointer;
 }
 CSS;
 $r .= '</style>';
+$r .= '</head>';
+$r .= '<body>';
 $r .= '<main>';
-$r .= '<form method="post">';
-$r .= '<p>Since the release of Mecha version 4.0.0, our page file specifications have evolved, leaving your existing page files obsolete. This tool can help you convert them all at once.</p>';
-$r .= '<p>The rules are as follows:</p>';
-$r .= '<ol>';
-$r .= '<li><p>The <code>*.archive</code>, <code>*.draft</code>, and <code>*.page</code> extensions are now deprecated in favor of the <code>*.json</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. Use the <code>*.txt</code> extension if you want to preserve the content of the existing page files as it is. It is the default extension for the former page format. You can assume that any page files with an extension other than <code>*.json</code> or <code>*.yaml</code> will be treated as if they had the <code>*.txt</code> extension. Thus, Mecha will parse their content as if they were written in the former page format.</p></li>';
-$r .= '<li><p>You have the right to choose your preferred style. If you are familiar with the previous page format and don&rsquo;t want to switch, use the <code>*.txt</code> extension. The content will be the same:</p><pre><code>---
+if (!array_key_exists('next', $_GET)) {
+    $r .= '<h1>Page Extension Update</h1>';
+    $r .= '<p>Since the release of Mecha version 4.0.0, our page file specifications have evolved, leaving your existing page files obsolete. This tool will help you convert them all at once.</p>';
+    $r .= '<p>The rules are as follows:</p>';
+    $r .= '<ol>';
+    $r .= '<li><p>The <code>*.archive</code>, <code>*.data</code>, <code>*.draft</code>, and <code>*.page</code> extensions are now deprecated in favor of the <code>*.json</code>, <code>*.md</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. Use the <code>*.txt</code> extension if you want to preserve the content of the existing page files as it is. It is the default extension for the former page format. You can assume that any page files with an extension other than <code>*.json</code>, <code>*.md</code>, or <code>*.yaml</code> will be treated as if they had the <code>*.txt</code> extension. Thus, Mecha will parse their content as if they were written in the former page format.</p><p>The <code>*.md</code> extension is generally treated like the <code>*.txt</code> extension, but with a special case for its <code>type</code> data, that I will explain later. Alternatives to the <code>*.md</code> extension are <code>*.markdown</code> and <code>*.mkd</code>. Alternative to the <code>*.yaml</code> extension is <code>*.yml</code>. Alternatives to the <code>*.txt</code> extension are any extensions not featured in the list. Actually, the <code>*.txt</code> extension is not featured either. It is mentioned here only to explain how it will process unknown extensions.</p></li>';
+    $r .= '<li><p>You have the right to choose your preferred style. If you are familiar with the previous page format and don&rsquo;t want to switch, use the <code>*.txt</code> extension. The content will be the same:</p><pre><code>---
 title: Page Title
 description: Page description.
 type: Markdown
 ...
 
-Page content goes here.</code></pre><p>You won&rsquo;t get the nice YAML syntax highlighting provided by your preferred source code editor, but at least it won&rsquo;t warn you about invalid YAML syntax after the <code>...</code> marker.</p><p>If you wish to enjoy the benefits of proper syntax highlighting and formatting features natively from your preferred source code editor, it is best to use the <code>*.yaml</code> extension, but the formatting will be a bit different. There are two options:</p><ol><li><p>Simple key-value pairs that produce a single object. No special processing is needed. What you write is what the object will become:</p><pre><code>title: Page Title
-description: Page description.
-type: Markdown
-content: |
+Page content goes here.</code></pre><p>You won&rsquo;t get the nice YAML syntax highlighting provided by your preferred source code editor, but at least it won&rsquo;t warn you about invalid YAML syntax after the <a href="https://yaml.org/spec/1.2.2#22-structures" rel="nofollow" target="_blank"><code>...</code></a> marker.</p><p>If you wish to enjoy the benefits of proper syntax highlighting and formatting features natively from your preferred source code editor, it is best to use the <code>*.yaml</code> extension, but the formatting will be a bit different. There are two options:</p><ol><li><p>Simple key-value pairs that produce a single object. No special processing is needed. What you write is what the object will become:</p><pre><code><span class="key">title</span><span class="pun">:</span> <span class="val">Page Title</span>
+<span class="key">description</span><span class="pun">:</span> <span class="val">Page description.</span>
+<span class="key">type</span><span class="pun">:</span> <span class="val">Markdown</span>
+<span class="key">content</span><span class="pun">:</span> <span class="pun">|</span>
 
-  Page content goes here.</code></pre></li><li><p>The two-document style, in which the second document will become the page content:</p><pre><code>---
+  <span class="val">Page content goes here.</span></code></pre></li><li><p>The two-document style, in which the second document will become the page content:</p><pre><code><span class="mta">---</span>
+<span class="key">title</span><span class="pun">:</span> <span class="val">Page Title</span>
+<span class="key">description</span><span class="pun">:</span> <span class="val">Page description.</span>
+<span class="key">type</span><span class="pun">:</span> <span class="val">Markdown</span>
+<span class="mta">---</span> <span class="pun">|</span>
+
+  <span class="val">Page content goes here.</span></code></pre></li></ol><p>Please note that both styles require the page content to be indented, even by just one space. This is probably the part you&rsquo;ll find most inconvenient. However, it is necessary for a valid YAML syntax. If your source code editor supports YAML syntax, it should automatically indent your page content.</p></li>';
+    $r .= '<li><p>I&rsquo;m trying to force myself to embrace the YAML front-matter style. I&rsquo;ve done some research and haven&rsquo;t found any formal standards for this syntax that are as robust as <a href="https://spec.commonmark.org" rel="nofollow" target="_blank">CommonMark</a>. They exist because <a href="https://jekyllrb.com/docs/front-matter" rel="nofollow" target="_blank">Jekyll</a> popularized them. But, to be honest, YAML front-matter syntax is actually <em>flawed</em>. A plain text file containing YAML front-matter doesn&rsquo;t have a clear file type. It can&rsquo;t be considered YAML because the text after the second <code>---</code> marker can be arbitrary and doesn&rsquo;t have to be a valid YAML syntax. It also can&rsquo;t be considered Markdown because when parsed with a strict Markdown parser, the YAML front-matter part will simply result in a <code>&lt;hr&gt;</code> element followed by a <code>&lt;h2&gt;&hellip;&lt;/h2&gt;</code> element containing the raw YAML blocks as the element&rsquo;s content. Most source code editors that offer syntax highlighting based on file extensions also don&rsquo;t seem to support this kind of formatting natively, which means you&rsquo;ll likely need a third-party extension to provide the feature.</p><p>For these reasons, and to ease the transition from static site generator tools, I have decided to support this style. However, I will limit it only to files with the <code>*.md</code> and <code>*.txt</code> extensions. Some source code editors might give you an accurate syntax highlighting result for <code>*.md</code> files mixed with YAML front-matter, but this is usually because the source code editor silently supports it via third-party extensions that are likely pre-installed:</p><pre><code>---
+title: Page Title
+description: Page description.
+---
+
+Page content goes here.</code></pre><p>There is a special case for <code>*.md</code> files, in which the <code>type</code> data will be silently ignored and the value will always be assumed to be <code>\'Markdown\'</code> or <code>\'text/markdown\'</code>. The file extension itself already describes its content type clearly.</p></li>';
+    $r .= '<li><p>The other supported page file extension is <code>*.json</code>. I decided to support it because it is a sub-set of YAML, and most programming languages have a native parser for it. So, if you have a client application that wants to build a page file, it doesn&rsquo;t require a YAML parser to be compiled into the system. Using <a href="https://javascript.info/json#json-stringify" rel="nofollow" target="_blank"><code>JSON.stringify()</code></a> to generate the page file content is sufficient. Of course, the result is not convenient to edit by hand, especially the <code>content</code> part. Consider using this style if you plan to manage page files exclusively from a third-party graphical user interface that lacks YAML features:</p><pre><code><span class="pun">{</span>
+      <span class="key">"title"</span><span class="pun">:</span> <span class="val">"Page Title"</span><span class="pun">,</span>
+      <span class="key">"description"</span><span class="pun">:</span> <span class="val">"Page description."</span><span class="pun">,</span>
+      <span class="key">"type"</span><span class="pun">:</span> <span class="val">"Markdown"</span><span class="pun">,</span>
+      <span class="key">"content"</span><span class="pun">:</span> <span class="val">"Page content goes here."</span>
+    }</code></pre></li>';
+    $r .= '<li><p>You no longer mark &ldquo;archive&rdquo; and &ldquo;draft&rdquo; pages by their page file extensions. You simply store &ldquo;archive&rdquo; pages in the <code>.\lot\page\.archive\</code> folder and &ldquo;draft&rdquo; pages in the <code>.\lot\page\.draft\</code> folder.</p></li>';
+    $r .= '<li><p>Page&rsquo;s data files can now use the <code>*.json</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. The <code>*.md</code> extension is not supported because it is difficult to determine whether the file content should be parsed as Markdown block(s) or span. For data files with a <code>*.txt</code> extension, the content will be guaranteed to be returned as a string (or <code>null</code> if empty), even if it contains a boolean or numeric value, for example.</p><p>To differentiate it from other page files, data files for each page will now be stored in a <code>+\</code> folder within the related page folder, which should only be used to store the page&rsquo;s children:</p><pre><code>.\
+└── lot\
+    └── page\
+        ├── posts\
+        │   ├── +\
+        │   │   └── time.yaml ✔
+        │   ├── post-1.yaml
+        │   ├── post-2.yaml
+        │   ├── post-3.yaml
+        │   └── …
+        └── posts.yaml</code></pre></li>';
+    $r .= '</ol>';
+    $r .= '<p>That&rsquo;s all. You can either continue to convert your page files using the tool below or click the &ldquo;Cancel&rdquo; button to convert them manually.</p>';
+    $r .= '<hr>';
+}
+$r .= '<details' . (array_key_exists('next', $_GET) ? ' open' : "") . '>';
+$r .= '<summary>The Converter</summary>';
+$r .= '<form method="post">';
+if (array_key_exists('x', $_GET)) {
+    $r .= '<input name="x[page][state][x]" type="hidden" value="' . ($_GET['x'] ?? 'txt') . '">';
+} else {
+    $r .= '<p>Select your preferred page formatting style: <select name="x[page][state][x]"><option selected value="txt">Default</option><option value="md">Default as Markdown</option><option value="json">JSON</option><optgroup label="YAML"><option value="yaml">Default Style</option><option value="yaml+">Two-Document Style</option></optgroup><option value="txt+yaml">YAML Front-Matter Style</option><optio value="md+yaml">YAML Front-Matter Style as Markdown</option></select></p>';
+    $r .= '<pre><code style="background: #ffa; border: 1px solid #000; color: #000; display: block; padding: 0.5em 0.75em;">---
 title: Page Title
 description: Page description.
 type: Markdown
---- |
+...
 
-  Page content goes here.</code></pre></li></ol><p>Please note that both styles require the page content to be indented, even by just one space. This is probably the part you&rsquo;ll find most inconvenient. However, it is necessary for a valid YAML syntax. If you use a source code editor that supports YAML syntax, it should indent your page content automatically.</p></li>';
-$r .= '</ol>';
-if (count($files)) {
-    $r .= '<ul>';
-    foreach ($files as $k => $v) {
-        $route = strtr($k, [LOT . D => '/', D => '/']);
-        if (0 === strpos($route, '/x/') || 0 === strpos($route, '/y/')) {
-            continue;
-        }
-        $r .= '<li>';
-        $r .= '<label>';
-        $r .= '<input checked name="file[]" type="checkbox" value="' . $route . '">';
-        $r .= ' ';
-        $r .= $route;
-        $r .= '</label>';
-        $r .= '</li>';
-    }
-    $r .= '</ul>';
+Page content goes here.</code></pre>';
 }
+if (($rest = $count - $chunk) > 0) {
+    $r .= '<p>This is a list of the ' . ($rest > $chunk ? 'first ' . $chunk : 'last ' . $rest) . ' file' . (1 === $rest ? "" : 's') . ' found to be converted' . ($rest > $chunk ? '. The remaining <b style="color: #900;">' . $rest . '</b> file' . (1 === $rest ? "" : 's') . ' will be converted in the next batch' : "") . ':</p>';
+}
+$r .= '<ol style="list-style: none; margin-left: 0; padding-left: 1em;">';
+foreach ($lot as $k => $v) {
+    if ($chunk <= 0) {
+        break; // Re-convert later
+    }
+    $route = '/' . strtr(substr($k, strlen(LOT . D)), [D => '/']);
+    $r .= '<li>';
+    $r .= '<input name="x[page][files][0][' . htmlspecialchars($route) . ']" type="hidden" value="1">';
+    $r .= '<label>';
+    $r .= '<input checked name="x[page][files][1][' . htmlspecialchars($route) . ']" type="checkbox" value="1">';
+    $r .= ' ';
+    $r .= '<code>.' . htmlspecialchars(strtr($route, ['/' => "\\"])) . '</code>';
+    $r .= '</label>';
+    $r .= '</li>';
+    --$chunk;
+}
+$r .= '</ol>';
 $r .= '<p>';
 $r .= '<label>';
-$r .= '<input name="keep" type="checkbox" value="1">';
+$r .= '<input checked name="x[page][state][keep]" type="checkbox" value="1">';
 $r .= ' ';
-$r .= 'Keep the old page and page&rsquo;s data files in place. I will get rid of them manually.';
+$r .= 'Keep the old page and page&rsquo;s data files in <code>.\lot\trash\</code> folder. I will get rid of them manually.';
 $r .= '</label>';
 $r .= '</p>';
 $r .= '<p role="group">';
-$r .= '<button disabled name="x[page]" type="submit" value="1">Accept and convert all marked files!</button>';
+$r .= '<button name="x[page][task]" type="submit" value="1">Submit</button>';
 $r .= ' ';
-$r .= '<button disabled name="x[page]" type="submit" value="0">Do nothing and let me convert the marked files one by one manually!</button>';
+$r .= '<button name="x[page][task]" type="submit" value="0">Cancel</button>';
 $r .= '</p>';
 $r .= '</form>';
+$r .= '</details>';
 $r .= '</main>';
+$r .= '<script>';
+$r .= <<<'JS'
+document.forms[0].elements['x[page][state][x]'].addEventListener('change', function () {
+    let code = this.parentNode.nextElementSibling.firstChild,
+        v = this.value;
+    if ('json' === v) {
+        code.textContent = '{\n  "title":"Page Title",\n  "description":"Page description.",\n  "type":"Markdown",\n  "content":"Page content goes here."\n}';
+    } else if ('md' === v) {
+        code.textContent = '---\ntitle: Page Title\ndescription: Page description.\n...\n\nPage content goes here.';
+    } else if ('md+yaml' === v) {
+        code.textContent = '---\ntitle: Page Title\ndescription: Page description.\n---\n\nPage content goes here.';
+    } else if ('txt+yaml' === v) {
+        code.textContent = '---\ntitle: Page Title\ndescription: Page description.\ntype: Markdown\n---\n\nPage content goes here.';
+    } else if ('yaml' === v) {
+        code.textContent = 'title: Page Title\ndescription: Page description.\ntype: Markdown\ncontent: |\n\n  Page content goes here.';
+    } else if ('yaml+' === v) {
+        code.textContent = '---\ntitle: Page Title\ndescription: Page description.\ntype: Markdown\n--- |\n\n  Page content goes here.';
+    } else {
+        code.textContent = '---\ntitle: Page Title\ndescription: Page description.\ntype: Markdown\n...\n\nPage content goes here.';
+    }
+});
+JS;
+$r .= '</script>';
+$r .= '</body>';
+$r .= '</html>';
+
+http_response_code(200);
 
 echo $r;
 
