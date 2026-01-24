@@ -5,6 +5,18 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
     // echo json_encode($r, JSON_PRETTY_PRINT);
     // echo '</pre>';
     // exit;
+    foreach ($r['files'][1] as $k => $v) {
+        $x = pathinfo($k, PATHINFO_EXTENSION);
+        if ('data' === $x) {
+            // TODO: Convert page’s data here
+        } else {
+            // TODO: Convert page here
+            echo '<pre>';
+            echo json_encode(From::page(file_get_contents(LOT . $k)), JSON_PRETTY_PRINT);
+            echo '</pre>';
+            exit;
+        }
+    }
     if (!empty($r['state']['keep'])) {
         foreach ($r['files'][0] as $k => $v) {
             if (!is_file($f = path(LOT . $k))) {
@@ -24,14 +36,6 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
                 }
             }
             chmod($ff, 0600);
-        }
-    }
-    foreach ($r['files'][1] as $k => $v) {
-        $x = pathinfo($k, PATHINFO_EXTENSION);
-        if ('data' === $x) {
-            // TODO: Convert page’s data here
-        } else {
-            // TODO: Convert page here
         }
     }
     kick('?next=true&x=' . ($r['state']['x'] ?? 'txt'));
@@ -91,7 +95,7 @@ $r .= '<body>';
 $r .= '<main>';
 if (!array_key_exists('next', $_GET)) {
     $r .= '<h1>Page Extension Update</h1>';
-    $r .= '<p>Since the release of Mecha version 4.0.0, our page file specifications have evolved, leaving your existing page files obsolete. This tool will help you convert them all at once.</p>';
+    $r .= '<p>Since the release of Mecha version 4.0.0, our page file specifications have evolved, leaving your existing page files obsolete. This tool will help you to convert them all at once.</p>';
     $r .= '<p>The rules are as follows:</p>';
     $r .= '<ol>';
     $r .= '<li><p>The <code>*.archive</code>, <code>*.data</code>, <code>*.draft</code>, and <code>*.page</code> extensions are now deprecated in favor of the <code>*.json</code>, <code>*.md</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. Use the <code>*.txt</code> extension if you want to preserve the content of the existing page files as it is. It is the default extension for the former page format. You can assume that any page files with an extension other than <code>*.json</code>, <code>*.md</code>, or <code>*.yaml</code> will be treated as if they had the <code>*.txt</code> extension. Thus, Mecha will parse their content as if they were written in the former page format.</p><p>The <code>*.md</code> extension is generally treated like the <code>*.txt</code> extension, but with a special case for its <code>type</code> data, that I will explain later. Alternatives to the <code>*.md</code> extension are <code>*.markdown</code> and <code>*.mkd</code>. Alternative to the <code>*.yaml</code> extension is <code>*.yml</code>. Alternatives to the <code>*.txt</code> extension are any extensions not featured in the list. Actually, the <code>*.txt</code> extension is not featured either. It is mentioned here only to explain how it will process unknown extensions.</p></li>';
@@ -120,11 +124,11 @@ description: Page description.
 
 Page content goes here.</code></pre><p>There is a special case for <code>*.md</code> files, in which the <code>type</code> data will be silently ignored and the value will always be assumed to be <code>\'Markdown\'</code> or <code>\'text/markdown\'</code>. The file extension itself already describes its content type clearly.</p></li>';
     $r .= '<li><p>The other supported page file extension is <code>*.json</code>. I decided to support it because it is a sub-set of YAML, and most programming languages have a native parser for it. So, if you have a client application that wants to build a page file, it doesn&rsquo;t require a YAML parser to be compiled into the system. Using <a href="https://javascript.info/json#json-stringify" rel="nofollow" target="_blank"><code>JSON.stringify()</code></a> to generate the page file content is sufficient. Of course, the result is not convenient to edit by hand, especially the <code>content</code> part. Consider using this style if you plan to manage page files exclusively from a third-party graphical user interface that lacks YAML features:</p><pre><code><span class="pun">{</span>
-      <span class="key">"title"</span><span class="pun">:</span> <span class="val">"Page Title"</span><span class="pun">,</span>
-      <span class="key">"description"</span><span class="pun">:</span> <span class="val">"Page description."</span><span class="pun">,</span>
-      <span class="key">"type"</span><span class="pun">:</span> <span class="val">"Markdown"</span><span class="pun">,</span>
-      <span class="key">"content"</span><span class="pun">:</span> <span class="val">"Page content goes here."</span>
-    }</code></pre></li>';
+  <span class="key">"title"</span><span class="pun">:</span> <span class="val">"Page Title"</span><span class="pun">,</span>
+  <span class="key">"description"</span><span class="pun">:</span> <span class="val">"Page description."</span><span class="pun">,</span>
+  <span class="key">"type"</span><span class="pun">:</span> <span class="val">"Markdown"</span><span class="pun">,</span>
+  <span class="key">"content"</span><span class="pun">:</span> <span class="val">"Page content goes here."</span>
+}</code></pre></li>';
     $r .= '<li><p>You no longer mark &ldquo;archive&rdquo; and &ldquo;draft&rdquo; pages by their page file extensions. You simply store &ldquo;archive&rdquo; pages in the <code>.\lot\page\.archive\</code> folder and &ldquo;draft&rdquo; pages in the <code>.\lot\page\.draft\</code> folder.</p></li>';
     $r .= '<li><p>Page&rsquo;s data files can now use the <code>*.json</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. The <code>*.md</code> extension is not supported because it is difficult to determine whether the file content should be parsed as Markdown block(s) or span. For data files with a <code>*.txt</code> extension, the content will be guaranteed to be returned as a string (or <code>null</code> if empty), even if it contains a boolean or numeric value, for example.</p><p>To differentiate it from other page files, data files for each page will now be stored in a <code>+\</code> folder within the related page folder, which should only be used to store the page&rsquo;s children:</p><pre><code>.\
 └── lot\
@@ -147,7 +151,7 @@ $r .= '<form method="post">';
 if (array_key_exists('x', $_GET)) {
     $r .= '<input name="x[page][state][x]" type="hidden" value="' . ($_GET['x'] ?? 'txt') . '">';
 } else {
-    $r .= '<p>Select your preferred page formatting style: <select name="x[page][state][x]"><option selected value="txt">Default</option><option value="md">Default as Markdown</option><option value="json">JSON</option><optgroup label="YAML"><option value="yaml">Default Style</option><option value="yaml+">Two-Document Style</option></optgroup><option value="txt+yaml">YAML Front-Matter Style</option><optio value="md+yaml">YAML Front-Matter Style as Markdown</option></select></p>';
+    $r .= '<p>Select your preferred page formatting style: <select name="x[page][state][x]"><option selected value="txt">Default</option><option value="md">Default as Markdown</option><option value="json">JSON</option><optgroup label="YAML"><option value="yaml">Default Style</option><option value="yaml+">Two-Document Style</option></optgroup><option value="txt+yaml">YAML Front-Matter Style</option><option value="md+yaml">YAML Front-Matter Style as Markdown</option></select></p>';
     $r .= '<pre><code style="background: #ffa; border: 1px solid #000; color: #000; display: block; padding: 0.5em 0.75em;">---
 title: Page Title
 description: Page description.
