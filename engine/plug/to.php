@@ -81,13 +81,13 @@ To::_('description', static function (?string $value, $max = 200): ?string {
     return $r . (($m ? mb_strlen($r) : strlen($r)) > $max[0] ? $max[1] : "");
 });
 
-To::_('page', static function (?array $value): ?string {
+To::_('page', static function (?array $value, $dent = true): ?string {
     if (!$value) {
         return null;
     }
     $content = $value['content'] ?? "";
     unset($value['content']);
-    $value = rtrim("---\n" . To::YAML($value, 2) . "\n...\n\n" . $content, "\n");
+    $value = rtrim("---\n" . To::YAML($value, true === $dent ? 4 : (is_int($dent) && $dent > 0 ? $dent : 4)) . "\n...\n\n" . $content, "\n");
     return "---\n\n..." !== $value ? $value : null;
 });
 

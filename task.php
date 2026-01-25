@@ -1,22 +1,15 @@
 <?php
 
+if (version_compare(VERSION, '4.0.0', '<')) {
+    return;
+}
+
 if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?? 0)) {
+    $style = $r['state']['x'] ?? 'txt';
     // echo '<pre>';
     // echo json_encode($r, JSON_PRETTY_PRINT);
     // echo '</pre>';
     // exit;
-    foreach ($r['files'][1] as $k => $v) {
-        $x = pathinfo($k, PATHINFO_EXTENSION);
-        if ('data' === $x) {
-            // TODO: Convert page’s data here
-        } else {
-            // TODO: Convert page here
-            echo '<pre>';
-            echo json_encode(From::page(file_get_contents(LOT . $k)), JSON_PRETTY_PRINT);
-            echo '</pre>';
-            exit;
-        }
-    }
     if (!empty($r['state']['keep'])) {
         foreach ($r['files'][0] as $k => $v) {
             if (!is_file($f = path(LOT . $k))) {
@@ -26,29 +19,115 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             if (!is_dir($d = dirname($ff)) && !mkdir($d, 0700, true) && !is_dir($d)) {
                 throw new RuntimeException('Failed to create folder: `' . $d . '`');
             }
-            if (!isset($r['files'][1][$k])) {
-                if (!copy($f, $ff)) {
-                    throw new RuntimeException('Failed to copy file: `' . $f . '`');
-                }
-            } else {
-                if (!rename($f, $ff)) {
-                    throw new RuntimeException('Failed to move file: `' . $f . '`');
-                }
+            if (!copy($f, $ff)) {
+                throw new RuntimeException('Failed to copy file: `' . $f . '`');
             }
             chmod($ff, 0600);
         }
     }
-    kick('?next=true&x=' . ($r['state']['x'] ?? 'txt'));
+    foreach ($r['files'][1] as $k => $v) {
+        $x = pathinfo($f = path(LOT . $k), PATHINFO_EXTENSION);
+        // Convert page’s data
+        if ('data' === $x) {
+            if (!is_dir($d = dirname($f) . D . '+') && !mkdir($d, 0700, true) && !is_dir($d)) {
+                throw new RuntimeException('Failed to create folder: `' . $d . '`');
+            }
+            $ff = $d . D . basename($f, '.' . $x) . '.';
+            if (0 === filesize($f)) {
+                if (!rename($f, $fff = $ff . 'txt')) {
+                    throw new RuntimeException('Failed to move file: `' . $f . '`');
+                }
+                chmod($fff, 0600);
+                continue;
+            }
+            $v = trim(file_get_contents($f));
+            if ('null' === $v || function_exists('json_validate') && json_validate($v) || null !== json_decode($v)) {
+                if (!rename($f, $fff = $ff . 'json')) {
+                    throw new RuntimeException('Failed to move file: `' . $f . '`');
+                }
+                chmod($fff, 0600);
+                continue;
+            }
+            if (!rename($f, $fff = $ff . 'txt')) {
+                throw new RuntimeException('Failed to move file: `' . $f . '`');
+            }
+            chmod($fff, 0600);
+            continue;
+        }
+        // Convert page
+        if ('archive' === $x || 'draft' === $x) {
+            $d = LOT . D . (strstr(substr($k, 1), '/', true) ?: substr($k, 1));
+            $dd = trim(dirname(strstr(substr($k, 1), '/')) ?: "", '/');
+            $dd = trim('.' . $x . ("" !== $dd && '.' !== $dd ? '/' . $dd : ""), '/');
+            $ff = $d . D . ("" !== $dd && '.' !== $dd ? $dd . D : "") . basename($k, '.' . $x) . '.';
+            if (!is_dir($d = dirname($ff)) && !mkdir($d, 0700, true) && !is_dir($d)) {
+                throw new RuntimeException('Failed to create folder: `' . $d . '`');
+            }
+        } else {
+            $ff = dirname($f) . D . basename($k, '.' . $x) . '.';
+        }
+        if (0 === filesize($f)) {
+            if (!rename($f, $fff = $ff . 'txt')) {
+                throw new RuntimeException('Failed to move file: `' . $f . '`');
+            }
+            chmod($fff, 0600);
+            continue;
+        }
+        $data = From::page(file_get_contents($f));
+        $data_content = $data['content'] ?? "";
+        unset($data['content']);
+        if ('json' === $style) {
+            $data['content'] = $data_content;
+            $fff = $ff . 'json';
+            $s = json_encode($data);
+        } else if ('md' === $style) {
+            unset($data['type']);
+            $data['content'] = $data_content;
+            $fff = $ff . 'md';
+            $s = To::page($data, 2) ?? "";
+        } else if ('md+yaml' === $style || 'txt+yaml' === $style) {
+            if ('md+yaml' === $style) {
+                unset($data['type']);
+            }
+            $data['content'] = $data_content;
+            $fff = $ff . strstr($style, '+', true);
+            $s = To::page($data, 2) ?? "";
+            if ("\n..." === substr($s, -4)) {
+                $s = substr($s, 0, -4) . "\n---";
+            } else if (false !== ($n = strpos($s, "\n...\n"))) {
+                $s = implode("\n---\n", explode("\n...\n", $s, 2));
+            }
+        } else if ('yaml' === $style) {
+            $data['content'] = $data_content;
+            $fff = $ff . 'yaml';
+            $s = To::YAML($data, 2) ?? "";
+        } else if ('yaml+' === $style) {
+            $fff = $ff . 'yaml';
+            $s = "---\n" . To::YAML($data, 2) . "\n--- |\n\n" . implode("\n", array_map(function ($v) {
+                return "" !== trim($v) ? '  ' . $v : "";
+            }, explode("\n", $data_content)));
+        } else {
+            $data['content'] = $data_content;
+            $fff = $ff . 'txt';
+            $s = To::page($data, 2) ?? "";
+        }
+        if (!file_put_contents($fff, $s)) {
+            throw new RuntimeException('Failed to convert file: `' . $f . '`');
+        }
+        chmod($fff, 0600);
+        if (!unlink($f)) {
+            throw new RuntimeException('Failed to delete file: `' . $f . '`');
+        }
+    }
+    kick('?next=true&x=' . urlencode($r['state']['x'] ?? 'txt'));
 }
 
 $chunk = 100; // Limit to 100 file(s) for each conversion to avoid reaching PHP’s default `max_input_vars` value
 
-$lot = y(is(g(LOT, 'archive,data,draft,page', true), function ($v, $k) {
-    if (0 === strpos($k, LOT . D . 'trash' . D) || 0 === strpos($k, LOT . D . 'x' . D) || 0 === strpos($k, LOT . D . 'y' . D)) {
-        return false;
-    }
-    return true;
-}));
+$lot = [];
+foreach (['comment', 'page', 'tag', 'user'] as $k) {
+    $lot = array_merge($lot, y(g(LOT . D . $k, 'archive,data,draft,page', true)));
+}
 
 if (!($count = count($lot))) {
     return;
@@ -161,9 +240,11 @@ type: Markdown
 Page content goes here.</code></pre>';
 }
 if (($rest = $count - $chunk) > 0) {
-    $r .= '<p>This is a list of the ' . ($rest > $chunk ? 'first ' . $chunk : 'last ' . $rest) . ' file' . (1 === $rest ? "" : 's') . ' found to be converted' . ($rest > $chunk ? '. The remaining <b style="color: #900;">' . $rest . '</b> file' . (1 === $rest ? "" : 's') . ' will be converted in the next batch' : "") . ':</p>';
+    $r .= '<p>This is a list of the ' . ($rest > $chunk ? 'first ' . $chunk : 'last ' . $rest) . ' file' . (1 === $rest ? "" : 's') . ' found to be converted' . ($rest > $chunk ? '. The remaining <b style="color: #900;">' . $rest . '</b> file' . (1 === $rest ? "" : 's') . ' will be converted in the next batch. As this tool converts your pages, you have time to relax. You can make a coffee, watch TV, etc' : "") . '.</p>';
 }
-$r .= '<ol style="list-style: none; margin-left: 0; padding-left: 1em;">';
+$r .= '<p><label><input id="toggle-check-all" type="checkbox" checked> Select all</label></p>';
+$r .= '<fieldset style="padding: 1em;">';
+$r .= '<ol style="list-style: none; margin: 0; padding: 0;">';
 foreach ($lot as $k => $v) {
     if ($chunk <= 0) {
         break; // Re-convert later
@@ -179,7 +260,11 @@ foreach ($lot as $k => $v) {
     $r .= '</li>';
     --$chunk;
 }
+if ($rest > 0) {
+    $r .= '<li><label><input style="visibility: hidden;" type="checkbox"> <code>&hellip;</code></label></li>';
+}
 $r .= '</ol>';
+$r .= '</fieldset>';
 $r .= '<p>';
 $r .= '<label>';
 $r .= '<input checked name="x[page][state][keep]" type="checkbox" value="1">';
@@ -197,7 +282,10 @@ $r .= '</details>';
 $r .= '</main>';
 $r .= '<script>';
 $r .= <<<'JS'
-document.forms[0].elements['x[page][state][x]'].addEventListener('change', function () {
+const form = document.forms[0];
+const formChecks = form.querySelectorAll('[name^="x[page][files][1]["]');
+const formChecksAll = form.querySelector('#toggle-check-all');
+form.elements['x[page][state][x]'].addEventListener('change', function () {
     let code = this.parentNode.nextElementSibling.firstChild,
         v = this.value;
     if ('json' === v) {
@@ -216,8 +304,43 @@ document.forms[0].elements['x[page][state][x]'].addEventListener('change', funct
         code.textContent = '---\ntitle: Page Title\ndescription: Page description.\ntype: Markdown\n...\n\nPage content goes here.';
     }
 });
+const formChecksTotal = formChecks.length;
+formChecks.forEach(formCheck => {
+    formCheck.addEventListener('change', function () {
+        let formChecksCheckedTotal = [].slice.call(formChecks).filter(v => v.checked).length;
+        console.log({formChecksTotal, formChecksCheckedTotal});
+        if (0 === formChecksCheckedTotal) {
+            formChecksAll.checked = false;
+            formChecksAll.indeterminate = false;
+        } else if (formChecksCheckedTotal === formChecksTotal) {
+            formChecksAll.checked = true;
+            formChecksAll.indeterminate = false;
+        } else {
+            formChecksAll.checked = false;
+            formChecksAll.indeterminate = true;
+        }
+    });
+});
+formChecksAll.addEventListener('change', function () {
+    formChecks.forEach(formCheck => formCheck.checked = this.checked);
+});
 JS;
 $r .= '</script>';
+if (array_key_exists('next', $_GET)) {
+    $r .= '<script>';
+    $r .= <<<'JS'
+let timer;
+window.addEventListener('load', function () {
+    timer = window.setTimeout(function () {
+        document.forms[0].querySelector('[name="x[page][task]"][value="1"]').click();
+    }, 1000);
+});
+window.addEventListener('scroll', function () {
+    timer && clearTimeout(timer);
+});
+JS;
+    $r .= '</script>';
+}
 $r .= '</body>';
 $r .= '</html>';
 
