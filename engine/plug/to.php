@@ -51,7 +51,7 @@ To::_('description', static function (?string $value, $max = 200): ?string {
                 continue;
             }
             if (2 === $v[1]) {
-                $k = rtrim(strtok(substr($v[0], 1), " \n\r\t>"), '/');
+                $k = rtrim(substr($v[0], 1, strcspn($v[0], " \n\r\t>", 1)), '/');
                 if (false === strpos($keep, P . trim($k, '/') . P)) {
                     continue;
                 }

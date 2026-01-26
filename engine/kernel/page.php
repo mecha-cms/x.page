@@ -44,11 +44,11 @@ class Page extends File {
         // them as “not simple” for now.
         //
         // <https://yaml.org/spec/1.2.2#example-invalid-use-of-reserved-indicators>
-        if ("" !== $v && false !== strpos('!#&*>@`|', $v[0])) {
+        if (strspn($v, '!#&*>@`|')) {
             return false;
         }
         // A value followed by a comment is not considered “simple”.
-        if (($n = strpos($v, '#')) > 0 && false !== strpos(" \n\t", substr($v, $n - 1, 1))) {
+        if (($n = strpos($v, '#')) > 0 && strspn($v, " \n\t", $n - 1)) {
             return false;
         }
         // A “simple” value should not contain a `:` character followed by a white-space.
@@ -262,7 +262,7 @@ class Page extends File {
                 // Test for `"asdf": asdf` part in the stream…
                 if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
                     $v = trim(substr($v, strlen($k)));
-                    if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                    if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
                         if ($this->_s($value = substr($v, 2))) {
                             return $this->_e($value);
                         }
@@ -273,7 +273,7 @@ class Page extends File {
                 // Test for `'asdf': asdf` part in the stream…
                 if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
                     $v = trim(substr($v, strlen($k)));
-                    if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                    if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
                         if ($this->_s($value = substr($v, 2))) {
                             return $this->_e($value);
                         }
@@ -294,21 +294,21 @@ class Page extends File {
                 if (isset($flow) && false !== strpos($v, ',')) {
                     if (false !== ($n = strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"'))) {
                         $v = trim(substr($v, $n + strlen($k)));
-                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
                             $exist = true;
                             break;
                         }
                     }
                     if (false !== ($n = strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'"))) {
                         $v = trim(substr($v, $n + strlen($k)));
-                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
                             $exist = true;
                             break;
                         }
                     }
                     if (false !== ($n = strpos($v, $key))) {
                         $v = trim(substr($v, $n + strlen($key)));
-                        if (':' === ($v[0] ?? 0) && false !== strpos(" \n\t", substr($v, 1, 1))) {
+                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
                             $exist = true;
                             break;
                         }
