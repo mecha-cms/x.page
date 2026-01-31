@@ -6,11 +6,7 @@ if (version_compare(VERSION, '4.0.0', '<')) {
 
 if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?? 0)) {
     $style = $r['state']['x'] ?? 'txt';
-    // echo '<pre>';
-    // echo json_encode($r, JSON_PRETTY_PRINT);
-    // echo '</pre>';
-    // exit;
-    if (!empty($r['state']['keep'])) {
+    if ($keep = !empty($r['state']['keep'])) {
         foreach ($r['files'][0] as $k => $v) {
             if (!is_file($f = path(LOT . $k))) {
                 throw new RuntimeException('Not a file: `' . $f . '`');
@@ -82,34 +78,37 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             $s = json_encode($data);
         } else if ('md' === $style) {
             unset($data['type']);
-            $data['content'] = $data_content;
             $fff = $ff . 'md';
-            $s = To::page($data, 2) ?? "";
+            $s = trim("---\n" . To::YAML($data, 2) . "\n...\n\n" . $data_content, "\n");
         } else if ('md+yaml' === $style || 'txt+yaml' === $style) {
             if ('md+yaml' === $style) {
                 unset($data['type']);
             }
-            $data['content'] = $data_content;
             $fff = $ff . strstr($style, '+', true);
-            $s = To::page($data, 2) ?? "";
-            if ("\n..." === substr($s, -4)) {
-                $s = substr($s, 0, -4) . "\n---";
-            } else if (false !== ($n = strpos($s, "\n...\n"))) {
-                $s = implode("\n---\n", explode("\n...\n", $s, 2));
-            }
+            $s = trim("---\n" . To::YAML($data, 2) . "\n---\n\n" . $data_content, "\n");
         } else if ('yaml' === $style) {
-            $data['content'] = $data_content;
             $fff = $ff . 'yaml';
             $s = To::YAML($data, 2) ?? "";
+            if ("" !== $data_content && "" !== $s) {
+                if ('{' === $s[0] && '}' === substr($s, -1)) {
+                    $s = trim(substr($s, 0, -1)) . ', content: ' . json_encode($data_content) . ' }';
+                } else {
+                    $s .= "\ncontent: |\n\n" . implode("\n", array_map(function ($v) {
+                        return "" !== trim($v) ? '  ' . $v : "";
+                    }, explode("\n", $data_content)));
+                }
+            }
         } else if ('yaml+' === $style) {
             $fff = $ff . 'yaml';
-            $s = "---\n" . To::YAML($data, 2) . "\n--- |\n\n" . implode("\n", array_map(function ($v) {
-                return "" !== trim($v) ? '  ' . $v : "";
-            }, explode("\n", $data_content)));
+            $s = "---\n" . To::YAML($data, 2);
+            if ("" !== $data_content) {
+                $s .= "\n--- |\n\n" . implode("\n", array_map(function ($v) {
+                    return "" !== trim($v) ? '  ' . $v : "";
+                }, explode("\n", $data_content)));
+            }
         } else {
-            $data['content'] = $data_content;
             $fff = $ff . 'txt';
-            $s = To::page($data, 2) ?? "";
+            $s = trim("---\n" . To::YAML($data, 2) . "\n...\n\n" . $data_content, "\n");
         }
         if (!file_put_contents($fff, $s)) {
             throw new RuntimeException('Failed to convert file: `' . $f . '`');
@@ -119,7 +118,11 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             throw new RuntimeException('Failed to delete file: `' . $f . '`');
         }
     }
-    kick('?next=true&x=' . urlencode($r['state']['x'] ?? 'txt'));
+    kick(To::query([
+        'keep' => $keep ? 1 : 0,
+        'next' => 'true',
+        'x' => urlencode($r['state']['x'] ?? 'txt')
+    ]));
 }
 
 $chunk = 100; // Limit to 100 file(s) for each conversion to avoid reaching PHP’s default `max_input_vars` value
@@ -130,6 +133,9 @@ foreach (['comment', 'page', 'tag', 'user'] as $k) {
 }
 
 if (!($count = count($lot))) {
+    if (!empty($_GET)) {
+        kick('/');
+    }
     return;
 }
 
@@ -209,12 +215,12 @@ Page content goes here.</code></pre><p>There is a special case for <code>*.md</c
   <span class="key">"content"</span><span class="pun">:</span> <span class="val">"Page content goes here."</span>
 }</code></pre></li>';
     $r .= '<li><p>You no longer mark &ldquo;archive&rdquo; and &ldquo;draft&rdquo; pages by their page file extensions. You simply store &ldquo;archive&rdquo; pages in the <code>.\lot\page\.archive\</code> folder and &ldquo;draft&rdquo; pages in the <code>.\lot\page\.draft\</code> folder.</p></li>';
-    $r .= '<li><p>Page&rsquo;s data files can now use the <code>*.json</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. The <code>*.md</code> extension is not supported because it is difficult to determine whether the file content should be parsed as Markdown block(s) or span. For data files with a <code>*.txt</code> extension, the content will be guaranteed to be returned as a string (or <code>null</code> if empty), even if it contains a boolean or numeric value, for example.</p><p>To differentiate it from other page files, data files for each page will now be stored in a <code>+\</code> folder within the related page folder, which should only be used to store the page&rsquo;s children:</p><pre><code>.\
+    $r .= '<li><p>Page&rsquo;s data files will now use the <code>*.json</code>, <code>*.txt</code>, and <code>*.yaml</code> extensions. The <code>*.md</code> extension is intentionally not supported for page data since it has always been difficult to determine whether the file content should be parsed as a Markdown block or a span. For page data files with a <code>*.txt</code> extension, the content will be guaranteed to be returned as a string (or <code>null</code> if empty), even if it contains a boolean or numeric value, for example.</p><p>To differentiate it from other page files, data files for each page will now be stored in a <code>+\</code> folder within the related page folder &mdash;which should only be used to store the page&rsquo;s children:</p><pre><code>.\
 └── lot\
     └── page\
         ├── posts\
         │   ├── +\
-        │   │   └── time.yaml ✔
+        │   │   └── time.txt ✔
         │   ├── post-1.yaml
         │   ├── post-2.yaml
         │   ├── post-3.yaml
@@ -230,7 +236,7 @@ $r .= '<form method="post">';
 if (array_key_exists('x', $_GET)) {
     $r .= '<input name="x[page][state][x]" type="hidden" value="' . ($_GET['x'] ?? 'txt') . '">';
 } else {
-    $r .= '<p>Select your preferred page formatting style: <select name="x[page][state][x]"><option selected value="txt">Default</option><option value="md">Default as Markdown</option><option value="json">JSON</option><optgroup label="YAML"><option value="yaml">Default Style</option><option value="yaml+">Two-Document Style</option></optgroup><option value="txt+yaml">YAML Front-Matter Style</option><option value="md+yaml">YAML Front-Matter Style as Markdown</option></select></p>';
+    $r .= '<p>Select your preferred page formatting style: <select name="x[page][state][x]"><option selected value="txt">Default</option><option value="md">Default as Markdown</option><option value="json">JSON</option><optgroup label="YAML"><option value="yaml">YAML Default Style</option><option value="yaml+">YAML Two-Document Style</option></optgroup><option value="txt+yaml">YAML Front-Matter Style</option><option value="md+yaml">YAML Front-Matter Style as Markdown</option></select></p>';
     $r .= '<pre><code style="background: #ffa; border: 1px solid #000; color: #000; display: block; padding: 0.5em 0.75em;">---
 title: Page Title
 description: Page description.
@@ -265,13 +271,17 @@ if ($rest > 0) {
 }
 $r .= '</ol>';
 $r .= '</fieldset>';
-$r .= '<p>';
-$r .= '<label>';
-$r .= '<input checked name="x[page][state][keep]" type="checkbox" value="1">';
-$r .= ' ';
-$r .= 'Keep the old page and page&rsquo;s data files in <code>.\lot\trash\</code> folder. I will get rid of them manually.';
-$r .= '</label>';
-$r .= '</p>';
+if (array_key_exists('keep', $_GET)) {
+    $r .= '<input name="x[page][state][keep]" type="hidden" value="' . (empty($_GET['keep']) ? '0' : '1') . '">';
+} else {
+    $r .= '<p>';
+    $r .= '<label>';
+    $r .= '<input' . (!array_key_exists('keep', $_GET) || !empty($_GET['keep']) ? ' checked' : "") . ' name="x[page][state][keep]" type="checkbox" value="1">';
+    $r .= ' ';
+    $r .= 'Keep the old page and page&rsquo;s data files in <code>.\lot\trash\</code> folder. I will get rid of them manually.';
+    $r .= '</label>';
+    $r .= '</p>';
+}
 $r .= '<p role="group">';
 $r .= '<button name="x[page][task]" type="submit" value="1">Submit</button>';
 $r .= ' ';
@@ -325,9 +335,7 @@ formChecksAll.addEventListener('change', function () {
     formChecks.forEach(formCheck => formCheck.checked = this.checked);
 });
 JS;
-$r .= '</script>';
 if (array_key_exists('next', $_GET)) {
-    $r .= '<script>';
     $r .= <<<'JS'
 let timer;
 window.addEventListener('load', function () {
@@ -339,8 +347,8 @@ window.addEventListener('scroll', function () {
     timer && clearTimeout(timer);
 });
 JS;
-    $r .= '</script>';
 }
+$r .= '</script>';
 $r .= '</body>';
 $r .= '</html>';
 
