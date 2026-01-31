@@ -203,12 +203,12 @@ class Pages extends Anemone {
         if (!is_string($v) || !is_dir($v)) {
             return new static;
         }
-        $lot = array_replace([LOT . D . 'page', 'page', 0], $lot);
+        $lot = array_replace([LOT . D . 'page', 'json,markdown,md,mkd,txt,yaml,yml', 0], $lot);
         $lot[0] = path($lot[0]);
         $lot[3] = false;
         $that = new static;
         $that->lot = new CallbackFilterIterator(g(...$lot), static function ($v) {
-            // Ignore dot file(s) such as `.archive` and `.page` file(s)
+            // Ignore dot file(s) such as `.txt` file(s)
             return "" !== pathinfo($v, PATHINFO_FILENAME);
         });
         return $that;

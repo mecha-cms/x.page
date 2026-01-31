@@ -14,11 +14,12 @@ namespace {
     $route = \trim($state->route ?? 'index', '/');
     if ($part = \x\page\part($path = \trim($url->path ?? $route, '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
-        $r = \LOT . \D . 'page' . \D . $path . \D . $part;
-        if (\exist([
-            $r . '.archive',
-            $r . '.page'
-        ], 1)) {
+        $r = [];
+        foreach (['json', 'markdown', 'md', 'mkd', 'txt', 'yaml', 'yml'] as $x) {
+            $r[] = \LOT . \D . 'page' . \D . $path . \D . $part . '.' . $x;
+            $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . $path . \D . $part . '.' . $x;
+        }
+        if (\exist($r, 1)) {
             $path .= '/' . $part;
             unset($part);
         }
@@ -27,8 +28,8 @@ namespace {
         'has' => ['part' => isset($part)],
         'is' => [
             'home' => "" === $path || $route === $path,
-            'page' => !isset($part),
-            'pages' => isset($part)
+            'item' => !isset($part),
+            'items' => isset($part)
         ]
     ]);
 }
@@ -53,30 +54,32 @@ namespace x\page {
         \extract(\lot(), \EXTR_SKIP);
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
-        $folder = \LOT . \D . 'page' . \D . \strtr($path ?: $route, '/', \D);
+        $support = 'json,markdown,md,mkd,txt,yaml,yml';
         if ($part = part($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
             $route = \substr($route, 0, -\strlen('/' . $part));
-            if (\exist([
-                $folder . '.archive',
-                $folder . '.page'
-            ], 1)) {
+            $r = [];
+            foreach (\explode(',', $support) as $x) {
+                $r[] = \LOT . \D . 'page' . \D . ($path ?: $route) . \D . $part . '.' . $x;
+                $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . ($path ?: $route) . \D . $part . '.' . $x;
+            }
+            if (\exist($r, 1)) {
                 $path .= '/' . $part;
                 $route .= '/' . $part;
                 unset($part);
-            } else {
-                $folder = \dirname($folder);
             }
         }
         $part = ($part ?? 0) - 1;
         if ($part <= 0 && $route === $path) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
+        $r = [];
+        foreach (\explode(',', $support) as $x) {
+            $r[] = \LOT . \D . 'page' . \D . ($path ?: $route) . '.' . $x;
+            $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . ($path ?: $route) . '.' . $x;
+        }
         $y = "" !== $path ? '/' . $path : "";
-        if ($file = \exist([
-            $folder . '.archive',
-            $folder . '.page'
-        ], 1)) {
+        if ($file = \exist($r, 1)) {
             $page = new \Page($file, ['part' => $part + 1]);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
@@ -84,15 +87,15 @@ namespace x\page {
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set('has', [
-                'pages' => $part < 0 && \q($page->children('page')) > 0,
+                'items' => $part < 0 && \q($page->children($support)) > 0,
                 'parent' => !!$page->parent
             ]);
             if ($part >= 0) {
-                // The “pages” view was disabled by an `.archive` or `.page` file
-                if (\is_file($folder . \D . '.' . $page->x)) {
+                // The “items” view was disabled by a dot file
+                if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->x)) {
                     \kick('/' . $path);
                 }
-                if ($pages = $page->children('page', $deep)) {
+                if ($pages = $page->children($support, $deep)) {
                     $pages = $pages->sort($sort);
                 } else {
                     $pages = new \Pages;
@@ -112,7 +115,7 @@ namespace x\page {
                         'prev' => !!$pager->prev
                     ],
                     'is' => ['error' => 0 === $count ? 404 : false],
-                    'with' => ['pages' => $count > 0]
+                    'with' => ['items' => $count > 0]
                 ]);
                 return ['pages' . $y, [], 0 === $count ? 404 : 200];
             }

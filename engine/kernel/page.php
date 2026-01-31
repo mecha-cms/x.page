@@ -156,7 +156,7 @@ class Page extends File {
         return null;
     }
 
-    public function children($x = 'page', $deep = 0) {
+    public function children($x = 'json,markdown,md,mkd,txt,yaml,yml', $deep = 0) {
         if (!$this->_exist()) {
             return null;
         }
@@ -187,19 +187,27 @@ class Page extends File {
             foreach ((array) From::page(file_get_contents($path = $this->path), true) as $k => $v) {
                 $yield[$k] = 1;
                 // Prioritize data from a file…
-                if (is_file($f = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . $k . '.data')) {
-                    yield $k => $this->_e(trim(file_get_contents($f)));
+                foreach (explode(',', 'json,txt,yaml,yml') as $x) {
+                    if (is_file($f = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.' . $x)) {
+                        break;
+                    }
+                    unset($f);
+                }
+                if (isset($f)) {
+                    $v = trim(file_get_contents($f));
+                    yield $k => false === strpos(',json,yaml,yml,', ',' . pathinfo($f, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v);
                 } else {
                     yield $k => $v;
                 }
             }
             // Read the rest of page data from a file…
-            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'data') as $k => $v) {
-                if (isset($yield[$n = basename($k, '.data')])) {
+            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'json,txt,yaml,yml') as $k => $v) {
+                if (isset($yield[$n = pathinfo($k, PATHINFO_FILENAME)])) {
                     continue; // Has been read, skip!
                 }
                 $yield[$n] = 1;
-                yield $n => $this->_e(trim(file_get_contents($k)));
+                $v = trim(file_get_contents($k));
+                yield $n => false === strpos(',json,yaml,yml,', ',' . pathinfo($k, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v);
             }
         }
         // Read page data from the default value(s)…
@@ -223,8 +231,18 @@ class Page extends File {
         if ($this->_exist()) {
             // Prioritize data from a file…
             $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
-            if (is_file($f = $folder . D . $key . '.data')) {
-                return 0 !== filesize($f) ? ($this->lot[$key] = $this->_e(trim(file_get_contents($f)))) : null;
+            foreach (explode(',', 'json,txt,yaml,yml') as $x) {
+                if (is_file($f = $folder . D . '+' . D . $key . '.' . $x)) {
+                    break;
+                }
+                unset($f);
+            }
+            if (isset($f)) {
+                if (0 === filesize($f)) {
+                    return null;
+                }
+                $v = trim(file_get_contents($f));
+                return ($this->lot[$key] = false === strpos(',json,yaml,yml,', ',' . pathinfo($f, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v));
             }
             if (0 === filesize($path)) {
                 return null;
