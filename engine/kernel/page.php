@@ -62,8 +62,7 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        $hash = $lot ? '#' . md5(z($lot)) : "";
-        if (array_key_exists($k = $kin . $hash, $this->c)) {
+        if (array_key_exists($k = $kin . ($lot ? D . md5(z($lot)) : ""), $this->c)) {
             return $this->c[$k];
         }
         $v = Hook::fire(map($this->h, static function ($v) use ($kin) {
@@ -85,7 +84,7 @@ class Page extends File {
         $this->c = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
             $this->h[] = $v = c2f($v);
-            $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.page', true), $lot);
+            $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.data', true), $lot);
         }
         unset($this->lot['path']);
     }
@@ -110,7 +109,15 @@ class Page extends File {
     }
 
     public function __toString(): string {
-        return To::page(y($this->getIterator()));
+        if ($task = State::get('x.page.x.' . ($this->_x() ?? 'txt') . '.1')) {
+            $task = (array) ($task ?? []);
+            if (!empty($task[0]) && is_callable($task[0])) {
+                $task[1] = (array) ($task[1] ?? []);
+                array_unshift($task[1], y($this->getIterator()));
+                return call_user_func($task[0], ...$task[1]);
+            }
+        }
+        return To::page(y($this->getIterator()), 2);
     }
 
     public function __unserialize(array $lot): void {
@@ -156,10 +163,11 @@ class Page extends File {
         return null;
     }
 
-    public function children($x = 'json,markdown,md,mkd,txt,yaml,yml', $deep = 0) {
+    public function children($x = null, $deep = 0) {
         if (!$this->_exist()) {
             return null;
         }
+        $x ??= implode(',', array_keys((array) State::get('x.page.x', true))) ?: 'txt';
         if ($v = $this->offsetGet('children')) {
             if (is_array($v) || (is_string($v) && is_dir($v))) {
                 return Pages::from($v, $x, $deep);
@@ -181,38 +189,48 @@ class Page extends File {
     }
 
     public function getIterator(): Traversable {
-        $yield = [];
+        $c = [];
         if ($this->_exist()) {
-            // Read page data from content…
-            foreach ((array) From::page(file_get_contents($path = $this->path), true) as $k => $v) {
-                $yield[$k] = 1;
-                // Prioritize data from a file…
-                foreach (explode(',', 'json,txt,yaml,yml') as $x) {
-                    if (is_file($f = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.' . $x)) {
-                        break;
+            $task_of = (array) State::get('x.page.x', true);
+            $task = (array) ($task_of[$this->_x() ?? 'txt'][0] ?? []);
+            if (!empty($task[0]) && is_callable($task[0])) {
+                $task[1] = (array) ($task[1] ?? []);
+                array_unshift($task[1], rtrim(file_get_contents($path = $this->path)));
+                // Read page data from content…
+                foreach ((array) call_user_func($task[0], ...$task[1]) as $k => $v) {
+                    $c[$k] = 1;
+                    // Prioritize data from a file…
+                    if ($f = exist(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.{' . (implode(',', array_keys($task_of)) ?: 'txt') . '}', 1)) {
+                        $task_data = (array) ($task_of[$x = pathinfo($f, PATHINFO_EXTENSION)][0] ?? []);
+                        if (!empty($task_data[0]) && is_callable($task_data[0])) {
+                            $task_data[1] = (array) ($task_data[1] ?? []);
+                            array_unshift($task_data[1], 0 === filesize($f) ? null : rtrim(file_get_contents($f)));
+                            yield $k => 'txt' === $x ? reset($task_data[1]) : call_user_func($task_data[0], ...$task_data[1]);
+                        } else {
+                            yield $k => 0 === filesize($f) ? null : rtrim(file_get_contents($f));
+                        }
                     }
-                    unset($f);
                 }
-                if (isset($f)) {
-                    $v = trim(file_get_contents($f));
-                    yield $k => false === strpos(',json,yaml,yml,', ',' . pathinfo($f, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v);
-                } else {
-                    yield $k => $v;
+                // Read the rest of page data from a file…
+                foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), implode(',', array_keys($task_of)) ?: 'txt') as $k => $v) {
+                    if (isset($c[$kk = pathinfo($k, PATHINFO_FILENAME)])) {
+                        continue; // Has been read, skip!
+                    }
+                    $c[$kk] = 1;
+                    $task_data = (array) ($task_of[$x = pathinfo($k, PATHINFO_EXTENSION)][0] ?? []);
+                    if (!empty($task_data[0]) && is_callable($task_data[0])) {
+                        $task_data[1] = (array) ($task_data[1] ?? []);
+                        array_unshift($task_data[1], 0 === filesize($k) ? null : rtrim(file_get_contents($k)));
+                        yield $kk => 'txt' === $x ? reset($task_data[1]) : call_user_func($task_data[0], ...$task_data[1]);
+                    } else {
+                        yield $kk => 0 === filesize($k) ? null : rtrim(file_get_contents($k));
+                    }
                 }
-            }
-            // Read the rest of page data from a file…
-            foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), 'json,txt,yaml,yml') as $k => $v) {
-                if (isset($yield[$n = pathinfo($k, PATHINFO_FILENAME)])) {
-                    continue; // Has been read, skip!
-                }
-                $yield[$n] = 1;
-                $v = trim(file_get_contents($k));
-                yield $n => false === strpos(',json,yaml,yml,', ',' . pathinfo($k, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v);
             }
         }
         // Read page data from the default value(s)…
         foreach ((array) ($this->lot ?? []) as $k => $v) {
-            if (isset($yield[$k])) {
+            if (isset($c[$k])) {
                 continue; // Has been read, skip!
             }
             yield $k => $v;
@@ -229,116 +247,120 @@ class Page extends File {
 
     public function offsetGet($key): mixed {
         if ($this->_exist()) {
+            $task_of = (array) State::get('x.page.x', true);
             // Prioritize data from a file…
-            $folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME);
-            foreach (explode(',', 'json,txt,yaml,yml') as $x) {
-                if (is_file($f = $folder . D . '+' . D . $key . '.' . $x)) {
-                    break;
-                }
-                unset($f);
-            }
-            if (isset($f)) {
+            if ($f = exist(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $key . '.{' . (implode(',', array_keys($task_of)) ?: 'txt') . '}', 1)) {
                 if (0 === filesize($f)) {
                     return null;
                 }
-                $v = trim(file_get_contents($f));
-                return ($this->lot[$key] = false === strpos(',json,yaml,yml,', ',' . pathinfo($f, PATHINFO_EXTENSION) . ',') ? $v : $this->_e($v));
+                $task = (array) ($task_of[$x = pathinfo($f, PATHINFO_EXTENSION)][0] ?? []);
+                if (!empty($task[0]) && is_callable($task[0])) {
+                    $task[1] = (array) ($task[1] ?? []);
+                    array_unshift($task[1], rtrim(file_get_contents($f)));
+                    return ($this->lot[$key] = 'txt' === $x ? reset($task[1]) : call_user_func($task[0], ...$task[1]));
+                }
             }
             if (0 === filesize($path)) {
                 return null;
             }
-            if ('content' === $key) {
-                $content = n(file_get_contents($path));
-                if (3 === strspn($content, '-')) {
-                    $content = trim(explode("\n...\n", $content . "\n", 2)[1] ?? "", "\n");
-                } else {
-                    $content = trim($content, "\n");
-                }
-                return ($this->lot[$key] = "" !== $content ? $content : null);
+            $task = (array) ($task_of[pathinfo($path, PATHINFO_EXTENSION)][0] ?? []);
+            if (!empty($task[0]) && is_callable($task[0])) {
+                $task[1] = (array) ($task[1] ?? []);
+                array_unshift($task[1], rtrim(file_get_contents($path)));
+                $this->lot = array_replace_recursive($this->lot ?? [], (array) call_user_func($task[0], ...$task[1]));
             }
-            // Stream the file content one line at a time for optimization, check if the line contains a simple
-            // key-value pair. If so, stop the stream immediately, parse the value and then return it to save memory!
-            $exist = false;
-            foreach (stream($path) as $k => $v) {
-                // No `---\n` part at the start of the stream means no page header at all.
-                if (0 === $k && "---\n" !== $v && 3 !== strspn($v, '-')) {
-                    break;
-                }
-                // Has reached the `...\n` part in the stream means the end of the page header.
-                if ('...' === $v || "...\n" === $v) {
-                    break;
-                }
-                // Skip comment part…
-                if (0 === strpos($v, '#')) {
-                    continue;
-                }
-                // Test for `{ asdf: asdf }` part in the stream…
-                if ($v && '{' === $v[0]) {
-                    $flow = true;
-                    $v = trim(substr(trim($v), 1, -1));
-                }
-                // Test for `"asdf": asdf` part in the stream…
-                if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
-                    $v = trim(substr($v, strlen($k)));
-                    if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
-                        if ($this->_s($value = substr($v, 2))) {
-                            return $this->_e($value);
-                        }
-                        $exist = true;
-                        break;
-                    }
-                }
-                // Test for `'asdf': asdf` part in the stream…
-                if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
-                    $v = trim(substr($v, strlen($k)));
-                    if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
-                        if ($this->_s($value = substr($v, 2))) {
-                            return $this->_e($value);
-                        }
-                        $exist = true;
-                        break;
-                    }
-                }
-                // Test for `asdf: asdf` part in the stream…
-                if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
-                    if ($key === trim(substr($v, 0, $n))) {
-                        if ($this->_s($value = substr($v, $n + 2))) {
-                            return $this->_e($value);
-                        }
-                        $exist = true;
-                        break;
-                    }
-                }
-                if (isset($flow) && false !== strpos($v, ',')) {
-                    if (false !== ($n = strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"'))) {
-                        $v = trim(substr($v, $n + strlen($k)));
-                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
-                            $exist = true;
-                            break;
-                        }
-                    }
-                    if (false !== ($n = strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'"))) {
-                        $v = trim(substr($v, $n + strlen($k)));
-                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
-                            $exist = true;
-                            break;
-                        }
-                    }
-                    if (false !== ($n = strpos($v, $key))) {
-                        $v = trim(substr($v, $n + strlen($key)));
-                        if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
-                            $exist = true;
-                            break;
-                        }
-                    }
-                }
-            }
-            // The key does exist, but the line is not a simple key-value pair, which means that the optimization could
-            // not be performed. And there we go, parsing the entire page content to get the accurate data.
-            if ($exist) {
-                $lot = From::page(file_get_contents($path));
-                $this->lot = array_replace_recursive($this->lot ?? [], $lot);
-            }
+            // if ('content' === $key) {
+            //     $content = n(file_get_contents($path));
+            //     if (3 === strspn($content, '-')) {
+            //         $content = trim(explode("\n...\n", $content . "\n", 2)[1] ?? "", "\n");
+            //     } else {
+            //         $content = trim($content, "\n");
+            //     }
+            //     return ($this->lot[$key] = "" !== $content ? $content : null);
+            // }
+            // // Stream the file content one line at a time for optimization, check if the line contains a simple
+            // // key-value pair. If so, stop the stream immediately, parse the value and then return it to save memory!
+            // $exist = false;
+            // foreach (stream($path) as $k => $v) {
+            //     // No `---\n` part at the start of the stream means no page header at all.
+            //     if (0 === $k && "---\n" !== $v && 3 !== strspn($v, '-')) {
+            //         break;
+            //     }
+            //     // Has reached the `...\n` part in the stream means the end of the page header.
+            //     if ('...' === $v || "...\n" === $v) {
+            //         break;
+            //     }
+            //     // Skip comment part…
+            //     if (0 === strpos($v, '#')) {
+            //         continue;
+            //     }
+            //     // Test for `{ asdf: asdf }` part in the stream…
+            //     if ($v && '{' === $v[0]) {
+            //         $flow = true;
+            //         $v = trim(substr(trim($v), 1, -1));
+            //     }
+            //     // Test for `"asdf": asdf` part in the stream…
+            //     if ($v && '"' === $v[0] && 0 === strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"')) {
+            //         $v = trim(substr($v, strlen($k)));
+            //         if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
+            //             if ($this->_s($value = substr($v, 2))) {
+            //                 return $this->_e($value);
+            //             }
+            //             $exist = true;
+            //             break;
+            //         }
+            //     }
+            //     // Test for `'asdf': asdf` part in the stream…
+            //     if ($v && "'" === $v[0] && 0 === strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'")) {
+            //         $v = trim(substr($v, strlen($k)));
+            //         if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
+            //             if ($this->_s($value = substr($v, 2))) {
+            //                 return $this->_e($value);
+            //             }
+            //             $exist = true;
+            //             break;
+            //         }
+            //     }
+            //     // Test for `asdf: asdf` part in the stream…
+            //     if ($v && false !== ($n = strpos($v, ":\n") ?: strpos($v, ":\t") ?: strpos($v, ': '))) {
+            //         if ($key === trim(substr($v, 0, $n))) {
+            //             if ($this->_s($value = substr($v, $n + 2))) {
+            //                 return $this->_e($value);
+            //             }
+            //             $exist = true;
+            //             break;
+            //         }
+            //     }
+            //     if (isset($flow) && false !== strpos($v, ',')) {
+            //         if (false !== ($n = strpos($v, $k = '"' . strtr($key, ['"' => '\"']) . '"'))) {
+            //             $v = trim(substr($v, $n + strlen($k)));
+            //             if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
+            //                 $exist = true;
+            //                 break;
+            //             }
+            //         }
+            //         if (false !== ($n = strpos($v, $k = "'" . strtr($key, ["'" => "''"]) . "'"))) {
+            //             $v = trim(substr($v, $n + strlen($k)));
+            //             if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
+            //                 $exist = true;
+            //                 break;
+            //             }
+            //         }
+            //         if (false !== ($n = strpos($v, $key))) {
+            //             $v = trim(substr($v, $n + strlen($key)));
+            //             if (':' === ($v[0] ?? 0) && strspn($v, " \n\t", 1)) {
+            //                 $exist = true;
+            //                 break;
+            //             }
+            //         }
+            //     }
+            // }
+            // // The key does exist, but the line is not a simple key-value pair, which means that the optimization could
+            // // not be performed. And there we go, parsing the entire page content to get the accurate data.
+            // if ($exist) {
+            //     $lot = From::page(file_get_contents($path));
+            //     $this->lot = array_replace_recursive($this->lot ?? [], $lot);
+            // }
         }
         return $this->lot[$key] ?? null;
     }
@@ -368,10 +390,7 @@ class Page extends File {
             return null;
         }
         $folder = dirname($this->path);
-        if ($v = exist([
-            $folder . '.archive',
-            $folder . '.page'
-        ], 1)) {
+        if ($v = exist($folder . '.{' . (implode(',', array_keys((array) State::get('x.page.x', true))) ?: 'txt') . '}', 1)) {
             return new static($v, $lot);
         }
         return null;
@@ -383,7 +402,13 @@ class Page extends File {
         }
         if ($path = $this->_exist()) {
             $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
-            return '/' . trim(strtr($folder, [LOT . D . 'page' . D => '/', D => '/']), '/');
+            if (0 === strpos($folder, $f = LOT . D . 'page' . D . '.archive' . D)) {
+                return '/' . trim(strtr(substr($folder, strlen($f)), [D => '/']), '/');
+            }
+            if (0 === strpos($folder, $f = LOT . D . 'page' . D . '.draft' . D)) {
+                return null;
+            }
+            return '/' . trim(strtr(substr($folder, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
         }
         return null;
     }

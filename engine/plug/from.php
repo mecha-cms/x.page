@@ -4,8 +4,11 @@ From::_('page', static function (?string $value): array {
     if (!$value = n($value)) {
         return [];
     }
+    if ('---' === rtrim($value)) {
+        return ['content' => null];
+    }
     if (3 === strspn($value, '-')) {
-        $value = trim(substr($value, 3), "\n");
+        $value = ltrim(substr($value, 3), "\n");
     }
     $v = explode("\n...\n", $value . "\n", 2);
     if (is_array($v[0] = From::YAML(trim($v[0], "\n"), true))) {

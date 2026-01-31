@@ -14,12 +14,7 @@ namespace {
     $route = \trim($state->route ?? 'index', '/');
     if ($part = \x\page\part($path = \trim($url->path ?? $route, '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
-        $r = [];
-        foreach (['json', 'markdown', 'md', 'mkd', 'txt', 'yaml', 'yml'] as $x) {
-            $r[] = \LOT . \D . 'page' . \D . $path . \D . $part . '.' . $x;
-            $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . $path . \D . $part . '.' . $x;
-        }
-        if (\exist($r, 1)) {
+        if (\exist(\LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . $path . \D . $part . '.{' . (implode(',', array_keys((array) ($state->x->page->x ?? []))) ?: 'txt') . '}', 1)) {
             $path .= '/' . $part;
             unset($part);
         }
@@ -52,34 +47,27 @@ namespace x\page {
             return $content;
         }
         \extract(\lot(), \EXTR_SKIP);
+        $extensions = implode(',', array_keys((array) ($state->x->page->x ?? []))) ?: 'txt';
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
-        $support = 'json,markdown,md,mkd,txt,yaml,yml';
+        $r = \LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . ($path ?: $route);
         if ($part = part($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
             $route = \substr($route, 0, -\strlen('/' . $part));
-            $r = [];
-            foreach (\explode(',', $support) as $x) {
-                $r[] = \LOT . \D . 'page' . \D . ($path ?: $route) . \D . $part . '.' . $x;
-                $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . ($path ?: $route) . \D . $part . '.' . $x;
-            }
-            if (\exist($r, 1)) {
+            if (\exist($r . \D . $part . '.{' . $extensions . '}', 1)) {
                 $path .= '/' . $part;
                 $route .= '/' . $part;
                 unset($part);
+            } else {
+                $r = \substr($r, 0, -\strlen('/' . $part));
             }
         }
         $part = ($part ?? 0) - 1;
         if ($part <= 0 && $route === $path) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
-        $r = [];
-        foreach (\explode(',', $support) as $x) {
-            $r[] = \LOT . \D . 'page' . \D . ($path ?: $route) . '.' . $x;
-            $r[] = \LOT . \D . 'page' . \D . '.archive' . \D . ($path ?: $route) . '.' . $x;
-        }
         $y = "" !== $path ? '/' . $path : "";
-        if ($file = \exist($r, 1)) {
+        if ($file = \exist($r . '.{' . $extensions . '}', 1)) {
             $page = new \Page($file, ['part' => $part + 1]);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
@@ -87,7 +75,7 @@ namespace x\page {
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set('has', [
-                'items' => $part < 0 && \q($page->children($support)) > 0,
+                'items' => $part < 0 && \q($page->children($extensions)) > 0,
                 'parent' => !!$page->parent
             ]);
             if ($part >= 0) {
@@ -95,7 +83,7 @@ namespace x\page {
                 if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->x)) {
                     \kick('/' . $path);
                 }
-                if ($pages = $page->children($support, $deep)) {
+                if ($pages = $page->children($extensions, $deep)) {
                     $pages = $pages->sort($sort);
                 } else {
                     $pages = new \Pages;
@@ -117,13 +105,13 @@ namespace x\page {
                     'is' => ['error' => 0 === $count ? 404 : false],
                     'with' => ['items' => $count > 0]
                 ]);
-                return ['pages' . $y, [], 0 === $count ? 404 : 200];
+                return ['items' . $y, [], 0 === $count ? 404 : 200];
             }
-            return ['page' . $y, [], 200];
+            return ['item' . $y, [], 200];
         }
         \lot('t')[] = \i('Error');
         \State::set('is.error', 404);
-        return ['page' . $y, [], 404];
+        return ['item' . $y, [], 404];
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
