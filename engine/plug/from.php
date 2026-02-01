@@ -1,19 +1,32 @@
 <?php
 
-From::_('page', static function (?string $value): array {
+From::_('page', static function (?string $value, $array = false) {
+    static $r;
+    $r ??= function (array $v, $array) {
+        return $array ? $v : (object) $v;
+    };
     if (!$value = n($value)) {
-        return [];
+        return $r([], $array);
     }
-    if ('---' === rtrim($value)) {
-        return ['content' => null];
+    if (0 !== strncmp($value, '---', 3)) {
+        return $r(['content' => $value], $array);
     }
-    if (3 === strspn($value, '-')) {
-        $value = ltrim(substr($value, 3), "\n");
+    $value = "\n" . ltrim(substr($value, 3), "\n") . "\n";
+    $a = strpos($value, "\n...\n");
+    $b = strpos($value, "\n---\n");
+    if (false === $a && false === $b) {
+        return $r(['content' => trim($value, "\n")], $array);
     }
-    $v = explode("\n...\n", $value . "\n", 2);
-    if (is_array($v[0] = From::YAML(trim($v[0], "\n"), true))) {
-        $v[1] = trim($v[1] ?? "", "\n");
-        return array_replace("" !== $v[1] ? ['content' => $v[1]] : [], $v[0]);
+    if (false === $a || (false !== $b && $b < $a)) {
+        $c = $b;
+    } else {
+        $c = $a;
     }
-    return ['content' => $value];
+    $content = substr($value, $c + 5);
+    $lot = substr($value, 1, $c - 1);
+    if (is_array($lot = From::YAML(trim($lot, "\n"), true))) {
+        $content = trim($content, "\n");
+        return $r(array_replace("" !== $content ? ['content' => $content] : [], $lot), $array);
+    }
+    return $r(['content' => trim($value, "\n")], $array);
 });

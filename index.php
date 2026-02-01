@@ -14,7 +14,7 @@ namespace {
     $route = \trim($state->route ?? 'index', '/');
     if ($part = \x\page\part($path = \trim($url->path ?? $route, '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
-        if (\exist(\LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . $path . \D . $part . '.{' . (implode(',', array_keys((array) ($state->x->page->x ?? []))) ?: 'txt') . '}', 1)) {
+        if (\exist(\LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . $path . \D . $part . '.{' . \x\page\x() . '}', 1)) {
             $path .= '/' . $part;
             unset($part);
         }
@@ -23,13 +23,26 @@ namespace {
         'has' => ['part' => isset($part)],
         'is' => [
             'home' => "" === $path || $route === $path,
-            'item' => !isset($part),
-            'items' => isset($part)
+            'page' => !isset($part),
+            'pages' => isset($part)
         ]
     ]);
 }
 
 namespace x\page {
+    function x(array $x = []) {
+        static $r;
+        if (null === $r) {
+            $prefix = __NAMESPACE__ . "\\to\\x\\";
+            $r = [];
+            foreach (\get_defined_functions()['user'] as $v) {
+                if (0 === \strpos($v, $prefix)) {
+                    $r[\substr($v, \strlen($prefix))] = 1;
+                }
+            }
+        }
+        return \implode(',', \array_keys(\array_filter(\array_replace($r, $x))));
+    }
     function route($content, $path, $query, $hash) {
         return \Hook::fire('route.page', [$content, $path, $query, $hash]);
     }
@@ -47,14 +60,13 @@ namespace x\page {
             return $content;
         }
         \extract(\lot(), \EXTR_SKIP);
-        $extensions = implode(',', array_keys((array) ($state->x->page->x ?? []))) ?: 'txt';
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
         $r = \LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . ($path ?: $route);
         if ($part = part($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
             $route = \substr($route, 0, -\strlen('/' . $part));
-            if (\exist($r . \D . $part . '.{' . $extensions . '}', 1)) {
+            if (\exist($r . '.{' . x() . '}', 1)) {
                 $path .= '/' . $part;
                 $route .= '/' . $part;
                 unset($part);
@@ -67,7 +79,7 @@ namespace x\page {
             \kick('/' . $query . $hash); // Redirect to home page
         }
         $y = "" !== $path ? '/' . $path : "";
-        if ($file = \exist($r . '.{' . $extensions . '}', 1)) {
+        if ($file = \exist($r . '.{' . x() . '}', 1)) {
             $page = new \Page($file, ['part' => $part + 1]);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
@@ -75,15 +87,15 @@ namespace x\page {
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set('has', [
-                'items' => $part < 0 && \q($page->children($extensions)) > 0,
+                'pages' => $part < 0 && \q($page->children(x())) > 0,
                 'parent' => !!$page->parent
             ]);
             if ($part >= 0) {
-                // The “items” view was disabled by a dot file
-                if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->x)) {
+                // The “pages” view was disabled by a dot file
+                if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->_x)) {
                     \kick('/' . $path);
                 }
-                if ($pages = $page->children($extensions, $deep)) {
+                if ($pages = $page->children(x(), $deep)) {
                     $pages = $pages->sort($sort);
                 } else {
                     $pages = new \Pages;
@@ -103,16 +115,34 @@ namespace x\page {
                         'prev' => !!$pager->prev
                     ],
                     'is' => ['error' => 0 === $count ? 404 : false],
-                    'with' => ['items' => $count > 0]
+                    'with' => ['pages' => $count > 0]
                 ]);
-                return ['items' . $y, [], 0 === $count ? 404 : 200];
+                return ['pages' . $y, [], 0 === $count ? 404 : 200];
             }
-            return ['item' . $y, [], 200];
+            return ['page' . $y, [], 200];
         }
         \lot('t')[] = \i('Error');
         \State::set('is.error', 404);
-        return ['item' . $y, [], 404];
+        return ['page' . $y, [], 404];
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
+}
+
+namespace x\page\from\x {
+    function json($content) {
+        return \From::JSON($content, true);
+    }
+    function txt($content) {
+        return \From::page($content, true);
+    }
+}
+
+namespace x\page\to\x {
+    function json($lot) {
+        return \To::JSON($lot, 2);
+    }
+    function txt($lot) {
+        return \To::page($lot, 2);
+    }
 }

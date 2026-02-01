@@ -203,7 +203,7 @@ class Pages extends Anemone {
         if (!is_string($v) || !is_dir($v)) {
             return new static;
         }
-        $lot = array_replace([LOT . D . 'page', 'json,markdown,md,mkd,txt,yaml,yml', 0], $lot);
+        $lot = array_replace([LOT . D . 'page', x\page\x(), 0], $lot);
         $lot[0] = path($lot[0]);
         $lot[3] = false;
         $that = new static;
