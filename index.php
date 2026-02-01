@@ -30,19 +30,6 @@ namespace {
 }
 
 namespace x\page {
-    function x(array $x = []) {
-        static $r;
-        if (null === $r) {
-            $prefix = __NAMESPACE__ . "\\to\\x\\";
-            $r = [];
-            foreach (\get_defined_functions()['user'] as $v) {
-                if (0 === \strpos($v, $prefix)) {
-                    $r[\substr($v, \strlen($prefix))] = 1;
-                }
-            }
-        }
-        return \implode(',', \array_keys(\array_filter(\array_replace($r, $x))));
-    }
     function route($content, $path, $query, $hash) {
         return \Hook::fire('route.page', [$content, $path, $query, $hash]);
     }
@@ -127,22 +114,4 @@ namespace x\page {
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
-}
-
-namespace x\page\from\x {
-    function json($content) {
-        return \From::JSON($content, true);
-    }
-    function txt($content) {
-        return \From::page($content, true);
-    }
-}
-
-namespace x\page\to\x {
-    function json($lot) {
-        return \To::JSON($lot, 2);
-    }
-    function txt($lot) {
-        return \To::page($lot, 2);
-    }
 }
