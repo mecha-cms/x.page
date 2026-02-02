@@ -16,7 +16,7 @@ namespace x\page {
         }
         return null;
     }
-    function x($join = ',', array $x = []) {
+    function x(array $x = []) {
         static $r;
         if (null === $r) {
             $prefix = __NAMESPACE__ . "\\to\\x\\";
@@ -27,9 +27,9 @@ namespace x\page {
                 }
             }
         }
-        $a = \array_keys(\array_filter(\array_replace($r, $x)));
-        $a && \sort($a);
-        return false === $join ? $a : \implode($join, $a);
+        $a = \array_filter(\array_replace($r, $x));
+        $a && \ksort($a);
+        return \implode(',', \array_keys($a));
     }
 }
 
