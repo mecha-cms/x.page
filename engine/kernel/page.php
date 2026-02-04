@@ -201,12 +201,11 @@ class Page extends File {
             if (0 === filesize($path)) {
                 return null;
             }
-            $v = ("" !== ($v = rtrim(file_get_contents($path))) ? $v : null);
-            if (function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION))) {
-                $this->lot = array_replace_recursive($this->lot ?? [], (array) call_user_func($task, $v));
-            } else {
-                $this->lot = array_replace_recursive($this->lot ?? [], From::page($v, true));
+            $content = ("" !== ($content = rtrim(file_get_contents($path))) ? $content : null);
+            if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? call_user_func($task, $content) : From::page($content, true))) {
+                $lot = ['content' => $content];
             }
+            $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);
         }
         return $this->lot[$key] ?? null;
     }
