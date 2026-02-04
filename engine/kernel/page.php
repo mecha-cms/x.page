@@ -146,21 +146,21 @@ class Page extends File {
                     if ($f = exist(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.{' . x\page\x() . '}', 1)) {
                         $v = 0 === filesize($f) ? null : ("" !== ($v = rtrim(file_get_contents($v))) ? $v : null);
                         if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                            yield $k => 'txt' === $x ? $v : call_user_func($task, $v);
+                            yield $k => call_user_func($task, $v) ?? $v;
                         } else {
                             yield $k => $v;
                         }
                     }
                 }
                 // Read the rest of page data from a file…
-                foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME), x\page\x()) as $k => $v) {
+                foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+', x\page\x()) as $k => $v) {
                     if (isset($c[$kk = pathinfo($k, PATHINFO_FILENAME)])) {
                         continue; // Has been read, skip!
                     }
                     $c[$kk] = 1;
                     $v = 0 === filesize($k) ? null : ("" !== ($v = rtrim(file_get_contents($k))) ? $v : null);
                     if (function_exists($task = $prefix . ($x = pathinfo($k, PATHINFO_EXTENSION)))) {
-                        yield $kk => 'txt' === $x ? $v : call_user_func($task, $v);
+                        yield $kk => call_user_func($task, $v) ?? $v;
                     } else {
                         yield $kk => $v;
                     }
@@ -194,7 +194,7 @@ class Page extends File {
                 }
                 $v = ("" !== ($v = rtrim(file_get_contents($f)))) ? $v : null;
                 if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                    return ($this->lot[$key] = 'txt' === $x ? $v : call_user_func($task, $v));
+                    return ($this->lot[$key] = call_user_func($task, $v) ?? $v);
                 }
                 return $v;
             }
