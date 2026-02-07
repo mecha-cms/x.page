@@ -104,13 +104,25 @@ namespace x\page {
                     'is' => ['error' => 0 === $count ? 404 : false],
                     'with' => ['pages' => $count > 0]
                 ]);
-                return ['pages' . $y, [], 0 === $count ? 404 : 200];
+                return [
+                    'lot' => [],
+                    'status' => 0 === $count ? 404 : 200,
+                    'y' => 'pages' . $y
+                ];
             }
-            return ['page' . $y, [], 200];
+            return [
+                'lot' => [],
+                'status' => 200,
+                'y' => 'page' . $y
+            ];
         }
         \lot('t')[] = \i('Error');
         \State::set('is.error', 404);
-        return ['page' . $y, [], 404];
+        return [
+            'lot' => [],
+            'status' => 404,
+            'y' => 'page' . $y
+        ];
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
