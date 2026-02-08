@@ -14,7 +14,7 @@ namespace {
     $route = \trim($state->route ?? 'index', '/');
     if ($part = \x\page\part($path = \trim($url->path ?? $route, '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
-        if (\exist(\LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . $path . \D . $part . '.{' . \x\page\x() . '}', 1)) {
+        if (\exist(\LOT . \D . 'page' . \D . $path . \D . "{',}" . $part . '.{' . \x\page\x() . '}', 1)) {
             $path .= '/' . $part;
             unset($part);
         }
@@ -49,11 +49,11 @@ namespace x\page {
         \extract(\lot(), \EXTR_SKIP);
         $path = \trim($path ?? "", '/');
         $route = \trim($state->route ?? 'index', '/');
-        $r = \LOT . \D . 'page' . \D . '{,.archive' . \D . '}' . ($path ?: $route);
+        $r = \LOT . \D . 'page' . \D . ($path ?: $route);
         if ($part = part($path ?: $route)) {
             $path = \substr($path, 0, -\strlen('/' . $part));
             $route = \substr($route, 0, -\strlen('/' . $part));
-            if (\exist($r . '.{' . x() . '}', 1)) {
+            if (\exist(\dirname($r) . \D . "{',}" . \basename($r) . '.{' . x() . '}', 1)) {
                 $path .= '/' . $part;
                 $route .= '/' . $part;
                 unset($part);
@@ -66,7 +66,7 @@ namespace x\page {
             \kick('/' . $query . $hash); // Redirect to home page
         }
         $y = "" !== $path ? '/' . $path : "";
-        if ($file = \exist($r . '.{' . x() . '}', 1)) {
+        if ($file = \exist(\dirname($r) . \D . "{',}" . \basename($r) . '.{' . x() . '}', 1)) {
             $page = new \Page($file, ['part' => $part + 1]);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;

@@ -207,9 +207,17 @@ class Pages extends Anemone {
         $lot[0] = path($lot[0]);
         $lot[3] = false;
         $that = new static;
-        $that->lot = new CallbackFilterIterator(g(...$lot), static function ($v) {
+        $that->lot = new CallbackFilterIterator(g(...$lot), function ($v) {
+            $name = pathinfo($v, PATHINFO_FILENAME);
             // Ignore dot file(s) such as `.txt` file(s)
-            return "" !== pathinfo($v, PATHINFO_FILENAME);
+            if ("" === $name) {
+                return false;
+            }
+            // Ignore file(s) with `'` (archive) and `~` (draft) prefix
+            if ("'" === $name[0] || '~' === $name[0]) {
+                return false;
+            }
+            return true;
         });
         return $that;
     }

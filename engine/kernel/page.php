@@ -246,14 +246,15 @@ class Page extends File {
             return '/' . trim(strtr($route, [D => '/']), '/');
         }
         if ($path = $this->_exist()) {
-            $folder = dirname($path) . D . pathinfo($path, PATHINFO_FILENAME);
-            if (0 === strpos($folder, $f = LOT . D . 'page' . D . '.archive' . D)) {
-                return '/' . trim(strtr(substr($folder, strlen($f)), [D => '/']), '/');
+            $n = pathinfo($path, PATHINFO_FILENAME);
+            $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
+            if ("'" === ($n[0] ?? 0)) {
+                return '/' . ("" !== $route ? $route . '/' : "") . substr($n, 1);
             }
-            if (0 === strpos($folder, $f = LOT . D . 'page' . D . '.draft' . D)) {
+            if ('~' === ($n[0] ?? 0)) {
                 return null;
             }
-            return '/' . trim(strtr(substr($folder, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
+            return '/' . ("" !== $route ? $route . '/' : "") . $n;
         }
         return null;
     }
