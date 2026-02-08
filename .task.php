@@ -51,17 +51,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             continue;
         }
         // Convert page
-        if ('archive' === $x || 'draft' === $x) {
-            $d = LOT . D . (strstr(substr($k, 1), '/', true) ?: substr($k, 1));
-            $dd = trim(dirname(strstr(substr($k, 1), '/')) ?: "", '/');
-            $dd = trim('.' . $x . ("" !== $dd && '.' !== $dd ? '/' . $dd : ""), '/');
-            $ff = $d . D . ("" !== $dd && '.' !== $dd ? $dd . D : "") . basename($k, '.' . $x) . '.';
-            if (!is_dir($d = dirname($ff)) && !mkdir($d, 0700, true) && !is_dir($d)) {
-                throw new RuntimeException('Failed to create folder: `' . $d . '`');
-            }
-        } else {
-            $ff = dirname($f) . D . basename($k, '.' . $x) . '.';
-        }
+        $ff = dirname($f) . D . ('archive' === $x ? "'" : ('draft' === $x ? '~' : "")) . basename($k, '.' . $x) . '.';
         if (0 === filesize($f)) {
             if (!rename($f, $fff = $ff . 'txt')) {
                 throw new RuntimeException('Failed to move file: `' . $f . '`');
@@ -69,7 +59,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             chmod($fff, 0600);
             continue;
         }
-        $data = From::page(file_get_contents($f));
+        $data = From::page(file_get_contents($f), true);
         $data_content = $data['content'] ?? "";
         unset($data['content']);
         if ('json' === $style) {
@@ -121,7 +111,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
     kick(To::query([
         'keep' => $keep ? 1 : 0,
         'next' => 'true',
-        'x' => urlencode($r['state']['x'] ?? 'txt')
+        'x' => $r['state']['x'] ?? 'txt'
     ]));
 }
 
@@ -133,6 +123,10 @@ foreach (['comment', 'page', 'tag', 'user'] as $k) {
 }
 
 if (!($count = count($lot))) {
+    // Self-delete after one day…
+    if (filemtime(__FILE__) < strtotime('-1 day')) {
+        unlink(__FILE__);
+    }
     if (!empty($_GET)) {
         kick('/');
     }

@@ -46,8 +46,16 @@ namespace x\page {
         if (null !== $content) {
             return $content;
         }
-        \extract(\lot(), \EXTR_SKIP);
         $path = \trim($path ?? "", '/');
+        // A public path should not contain the `'` or `~` prefix(es)
+        if (false !== \strpos('/' . $path, "/'") || false !== \strpos('/' . $path, '/~')) {
+            return [
+                'lot' => [],
+                'status' => 404,
+                'y' => 'page'
+            ];
+        }
+        \extract(\lot(), \EXTR_SKIP);
         $route = \trim($state->route ?? 'index', '/');
         $r = \LOT . \D . 'page' . \D . ($path ?: $route);
         if ($part = part($path ?: $route)) {
@@ -80,7 +88,7 @@ namespace x\page {
             if ($part >= 0) {
                 // The “pages” view was disabled by a dot file
                 if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->_x)) {
-                    \kick('/' . $path);
+                    \kick('/' . $path . $query . $hash);
                 }
                 if ($pages = $page->children(x(), $deep)) {
                     $pages = $pages->sort($sort);
