@@ -47,7 +47,7 @@ namespace x\page {
             return $content;
         }
         $path = \trim($path ?? "", '/');
-        // A public path should not contain the `'` or `~` prefix(es)
+        // A public path should not contain the `'` or `~` prefix
         if (false !== \strpos('/' . $path, "/'") || false !== \strpos('/' . $path, '/~')) {
             return [
                 'lot' => [],
