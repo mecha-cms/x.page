@@ -181,7 +181,14 @@ class Page extends File {
     }
 
     public function name(...$lot) {
-        return $this->lot['name'] ?? $this->_name(...$lot);
+        if (array_key_exists('name', $this->lot)) {
+            return $this->lot['name'];
+        }
+        $name = (string) $this->_name(...$lot);
+        if ('~' === ($name[0] ?? 0)) {
+            return null;
+        }
+        return '#' === ($name[0] ?? 0) ? substr($name, 1) : $name;
     }
 
     public function offsetGet($key): mixed {
@@ -247,11 +254,11 @@ class Page extends File {
         }
         if ($path = $this->_exist()) {
             $n = pathinfo($path, PATHINFO_FILENAME);
-            $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
             if ('~' === ($n[0] ?? 0)) {
                 return null;
             }
-            return '/' . ("" !== $route ? $route . '/' : "") . ("'" === ($n[0] ?? 0) ? substr($n, 1) : $n);
+            $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
+            return '/' . ("" !== $route ? $route . '/' : "") . ('#' === ($n[0] ?? 0) ? substr($n, 1) : $n);
         }
         return null;
     }

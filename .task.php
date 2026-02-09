@@ -51,7 +51,7 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             continue;
         }
         // Convert page
-        $ff = dirname($f) . D . ('archive' === $x ? "'" : ('draft' === $x ? '~' : "")) . basename($k, '.' . $x) . '.';
+        $ff = dirname($f) . D . ('archive' === $x ? '#' : ('draft' === $x ? '~' : "")) . basename($k, '.' . $x) . '.';
         if (0 === filesize($f)) {
             if (!rename($f, $fff = $ff . 'txt')) {
                 throw new RuntimeException('Failed to move file: `' . $f . '`');
