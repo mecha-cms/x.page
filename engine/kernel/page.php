@@ -248,13 +248,10 @@ class Page extends File {
         if ($path = $this->_exist()) {
             $n = pathinfo($path, PATHINFO_FILENAME);
             $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
-            if ("'" === ($n[0] ?? 0)) {
-                return '/' . ("" !== $route ? $route . '/' : "") . substr($n, 1);
-            }
             if ('~' === ($n[0] ?? 0)) {
                 return null;
             }
-            return '/' . ("" !== $route ? $route . '/' : "") . $n;
+            return '/' . ("" !== $route ? $route . '/' : "") . ("'" === ($n[0] ?? 0) ? substr($n, 1) : $n);
         }
         return null;
     }
