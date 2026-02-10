@@ -181,8 +181,8 @@ class Page extends File {
     }
 
     public function name(...$lot) {
-        if (array_key_exists('name', $this->lot)) {
-            return $this->lot['name'];
+        if (P !== ($name = $this->lot['name'] ?? P)) {
+            return $name;
         }
         $name = (string) $this->_name(...$lot);
         if ('~' === ($name[0] ?? 0)) {
@@ -253,12 +253,11 @@ class Page extends File {
             return '/' . trim(strtr($route, [D => '/']), '/');
         }
         if ($path = $this->_exist()) {
-            $n = pathinfo($path, PATHINFO_FILENAME);
-            if ('~' === ($n[0] ?? 0)) {
+            if (!is_string($name = $this->name())) {
                 return null;
             }
             $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
-            return '/' . ("" !== $route ? $route . '/' : "") . ('#' === ($n[0] ?? 0) ? substr($n, 1) : $n);
+            return '/' . ("" !== $route ? $route . '/' : "") . $name;
         }
         return null;
     }

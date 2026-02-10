@@ -46,14 +46,9 @@ namespace x\page {
         if (null !== $content) {
             return $content;
         }
-        $path = \trim($path ?? "", '/');
         // No part of the path can start with a `#` or `~`
-        if ($path && (
-            false !== \strpos('/' . $path, '/#') ||
-            false !== \strpos('/' . $path, '/%23') ||
-            false !== \strpos('/' . $path, '/%7E') ||
-            false !== \strpos('/' . $path, '/~')
-        )) {
+        $test = '/' . \rawurldecode($path = \trim($path ?? "", '/'));
+        if (false !== \strpos($test, '/#') || false !== \strpos($test, '/~')) {
             return [
                 'lot' => [],
                 'status' => 404,
