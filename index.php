@@ -12,7 +12,7 @@ namespace {
     \lot('pager', new \Pager);
     \lot('pages', new \Pages);
     $route = \trim($state->route ?? 'index', '/');
-    if ($part = \x\page\part($path = \trim(\rawurldecode($url->path ?? $route), '/'))) {
+    if ($part = \x\page\part($path = \trim(\rawurldecode($link->path ?? $route), '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
         if (\exist(\LOT . \D . 'page' . \D . $path . \D . '{#,}' . $part . '.{' . \x\page\x() . '}', 1)) {
             $path .= '/' . $part;

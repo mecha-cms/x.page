@@ -42,14 +42,14 @@ class Pages extends Anemone {
                         if (!is_string($vv) || 0 !== strpos($vv, PATH . D)) {
                             continue;
                         }
-                        $it[$k][$kk] = strtr($vv, [PATH . D => ".\\", D => "\\"]);
+                        $it[$k][$kk] = '.' . strtr(substr($vv, strlen(PATH)), [D => "\\"]);
                     }
                     continue;
                 }
                 if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
                     continue;
                 }
-                $it[$k] = strtr($v, [PATH . D => ".\\", D => "\\"]);
+                $it[$k] = '.' . strtr(substr($v, strlen(PATH)), [D => "\\"]);
             }
             $lot['lot'] = $it;
         }
@@ -72,14 +72,14 @@ class Pages extends Anemone {
                         if (!is_string($vv) || 0 !== strpos($vv, ".\\")) {
                             continue;
                         }
-                        $it[$k][$kk] = PATH . D . strtr(substr($vv, 2), ["\\" => D]);
+                        $it[$k][$kk] = PATH . strtr(substr($vv, 1), ["\\" => D]);
                     }
                     continue;
                 }
                 if (!is_string($v) || 0 !== strpos($v, ".\\")) {
                     continue;
                 }
-                $it[$k] = PATH . D . strtr(substr($v, 2), ["\\" => D]);
+                $it[$k] = PATH . strtr(substr($v, 1), ["\\" => D]);
             }
             $lot['lot'] = $it;
         }

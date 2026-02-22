@@ -51,7 +51,7 @@ class Page extends File {
                 if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
                     continue;
                 }
-                $v = strtr($v, [PATH . D => ".\\", D => "\\"]);
+                $v = '.' . strtr(substr($v, strlen(PATH)), [D => "\\"]);
             }
             unset($v);
         }
@@ -72,7 +72,7 @@ class Page extends File {
                 if (!is_string($v) || 0 !== strpos($v, ".\\")) {
                     continue;
                 }
-                $v = PATH . D . strtr(substr($v, 2), ["\\" => D]);
+                $v = PATH . strtr(substr($v, 1), ["\\" => D]);
             }
             unset($v);
         }
@@ -96,17 +96,7 @@ class Page extends File {
     }
 
     public function ID(...$lot) {
-        return $this->__call('id', $lot) ?? ((int) $this->time()->format('U'));
-    }
-
-    public function URL(...$lot) {
-        if ($url = $this->__call('url', $lot)) {
-            return $url;
-        }
-        if ($route = $this->route(...$lot)) {
-            return long($route);
-        }
-        return null;
+        return $this->__call(__FUNCTION__, $lot) ?? parent::ID(...$lot);
     }
 
     public function children($x = null, $deep = 0) {
@@ -114,7 +104,7 @@ class Page extends File {
             return null;
         }
         $x ??= x\page\x();
-        if ($v = $this->offsetGet('children')) {
+        if ($v = $this->offsetGet(__FUNCTION__)) {
             if (is_array($v) || (is_string($v) && is_dir($v))) {
                 return Pages::from($v, $x, $deep);
             }
@@ -127,11 +117,11 @@ class Page extends File {
     }
 
     public function content(...$lot) {
-        return $this->__call('content', $lot);
+        return $this->__call(__FUNCTION__, $lot);
     }
 
     public function exist(...$lot) {
-        return $this->lot['exist'] ?? $this->_exist(...$lot);
+        return $this->lot[__FUNCTION__] ?? $this->_exist(...$lot);
     }
 
     public function getIterator(): Traversable {
@@ -180,8 +170,18 @@ class Page extends File {
         return y($this->getIterator());
     }
 
+    public function link(...$lot) {
+        if ($link = $this->__call(__FUNCTION__, $lot)) {
+            return $link;
+        }
+        if ($route = $this->route(...$lot)) {
+            return long($route);
+        }
+        return null;
+    }
+
     public function name(...$lot) {
-        if (P !== ($name = $this->lot['name'] ?? P)) {
+        if (P !== ($name = $this->lot[__FUNCTION__] ?? P)) {
             return $name;
         }
         $name = (string) $this->_name(...$lot);
@@ -235,7 +235,7 @@ class Page extends File {
         if (!$this->_exist()) {
             return null;
         }
-        if ($v = $this->offsetGet('parent')) {
+        if ($v = $this->offsetGet(__FUNCTION__)) {
             if (is_string($v) && is_file($v)) {
                 return new static($v, $lot);
             }
@@ -249,7 +249,7 @@ class Page extends File {
     }
 
     public function route(...$lot) {
-        if ($route = $this->__call('route', $lot)) {
+        if ($route = $this->__call(__FUNCTION__, $lot)) {
             return '/' . trim(strtr($route, [D => '/']), '/');
         }
         if ($path = $this->_exist()) {
@@ -290,7 +290,7 @@ class Page extends File {
             }
         }
         if (!isset($t)) {
-            $t = $this->offsetGet('time') ?? parent::time();
+            $t = $this->offsetGet(__FUNCTION__) ?? parent::time();
             if (is_object($t) && $t instanceof DateTimeInterface) {
                 $t = $t->format('Y-m-d H:i:s');
             }
@@ -300,11 +300,11 @@ class Page extends File {
     }
 
     public function type(...$lot) {
-        return $this->__call('type', $lot) ?? 'HTML';
+        return $this->__call(__FUNCTION__, $lot) ?? 'HTML';
     }
 
     public function x(...$lot) {
-        return $this->lot['x'] ?? $this->_x(...$lot);
+        return $this->lot[__FUNCTION__] ?? $this->_x(...$lot);
     }
 
     public static function from(...$lot) {
