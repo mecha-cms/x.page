@@ -96,7 +96,7 @@ class Page extends File {
     }
 
     public function ID(...$lot) {
-        return $this->__call(__FUNCTION__, $lot) ?? parent::ID(...$lot);
+        return $this->__call($k = __FUNCTION__, $lot) ?? $this->__call(strtolower($k), $lot) ?? parent::ID(...$lot);
     }
 
     public function children($x = null, $deep = 0) {
@@ -263,29 +263,15 @@ class Page extends File {
     }
 
     public function time(?string $format = null) {
-        $name = (string) $this->_name();
-        // Set `time` value from the page’s file name.
-        if (($name = (string) $this->_name()) && '-' !== $name[0] && strspn($name, '-0123456789') === strlen($name)) {
-            $count = count($a = explode('-', $name));
-            if (3 === $count || 6 === $count) {
-                // Year
-                if (($n = (int) $a[0]) > 1969) {
-                    // Month
-                    if (($n = (int) $a[1]) > 0 && $n < 13) {
-                        // Day
-                        if (($n = (int) $a[2]) > 0 && $n < 32) {
-                            // Hour
-                            if (6 === $count && ($n = (int) $a[3]) > 0 && $n < 25) {
-                                // Minute
-                                if (($n = (int) $a[4]) > 0 && $n < 61) {
-                                    // Second
-                                    if (($n = (int) $a[5]) > 0 && $n < 61) {
-                                        $t = new Time($name);
-                                    }
-                                }
-                            }
-                        }
-                    }
+        $name = (string) $this->name();
+        if ($name && '-' !== $name[0] && strspn($name, '-0123456789') === strlen($name)) {
+            $d = DateTime::createFromFormat('Y-m-d-H-i-s', $name);
+            if ($d && $name === $d->format('Y-m-d-H-i-s')) {
+                $t = new Time($d->format('Y-m-d H:i:s'));
+            } else {
+                $d = DateTime::createFromFormat('Y-m-d', $name);
+                if ($d && $name === $d->format('Y-m-d')) {
+                    $t = new Time($d->format('Y-m-d H:i:s'));
                 }
             }
         }
