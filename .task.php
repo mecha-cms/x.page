@@ -60,6 +60,11 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             continue;
         }
         $data = From::page(file_get_contents($f), true);
+        // <https://github.com/orgs/mecha-cms/discussions/304>
+        if (is_string($data['link'] ?? 0)) {
+            $data['links'] = [$data['link']];
+            unset($data['link']);
+        }
         $data_content = $data['content'] ?? "";
         unset($data['content']);
         if ('json' === $style) {

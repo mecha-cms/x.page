@@ -213,11 +213,8 @@ class Pages extends Anemone {
             if ("" === $name) {
                 return false;
             }
-            // Ignore file(s) with `'` (archive) and `~` (draft) prefix
-            if ("'" === $name[0] || '~' === $name[0]) {
-                return false;
-            }
-            return true;
+            // Ignore file(s) with `#` (archive) and `~` (draft) prefix
+            return '#' !== $name[0] && '~' !== $name[0];
         });
         return $that;
     }
