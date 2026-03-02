@@ -30,7 +30,10 @@ class Pager extends Pages {
         if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
             return $this->{$key}();
         }
-        return parent::_($key) ? $this->__call($key) : $this->r->{$key};
+        if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {
+            return $this->r->{$key};
+        }
+        return $this->__call($key);
     }
 
     public function __isset(string $key): bool {
@@ -38,7 +41,7 @@ class Pager extends Pages {
     }
 
     public function __set(string $key, $value): void {
-        if (false !== strpos(',hash,host,path,port,query,scheme,', ',' . $key . ',')) {
+        if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {
             $this->r->{$key} = $value;
         } else {
             $this->{$key} = $value;
@@ -209,11 +212,11 @@ class Pager extends Pages {
         if ($part < 1) {
             return null;
         }
+        $base = $this->base ?? "";
         $hash = $this->hash ?? "";
         $path = $this->path ?? "";
         $query = $this->query ?? "";
-        $r = $this->r ?? "";
-        return $r . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
+        return $base . $path . ($part > 0 ? '/' . $part : "") . $query . $hash;
     }
 
 }

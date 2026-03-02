@@ -181,7 +181,7 @@ class Pages extends Anemone {
             if ('path' !== $sort[1]) {
                 $r = $deep ? (get($r, $sort[1]) ?? $sort[2]) : ($r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2]);
                 $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
-                $value[$sort[1]] = is_string($r) ? strip_tags($r) : $r; // Ignore HTML tag(s)
+                $value[$sort[1]] = is_string($r) ? trim(strip_tags($r)) : $r; // Ignore HTML tag(s)
             }
             $lot[$keys ? $key : ++$k] = $value;
             unset($r, $v);

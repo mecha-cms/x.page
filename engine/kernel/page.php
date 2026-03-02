@@ -13,12 +13,14 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        if (array_key_exists($k = $kin . ($lot ? D . md5(z($lot)) : ""), $this->c)) {
+        if (array_key_exists($k = $kin . ($lot ? D . md5(serialize($lot)) : ""), $this->c)) {
             return $this->c[$k];
         }
-        $v = Hook::fire(map($this->h, static function ($v) use ($kin) {
-            return $v .= '.' . $kin;
-        }), [$this->offsetGet($kin), $lot], $this);
+        $hooks = [];
+        foreach ($this->h as $h) {
+            $hooks[] = $h . '.' . $kin;
+        }
+        $v = Hook::fire($hooks, [$this->offsetGet($kin), $lot], $this);
         if ($lot && is_callable($v) && !is_string($v)) {
             $v = call_user_func($v, ...$lot);
         }
@@ -175,7 +177,21 @@ class Page extends File {
             return $link;
         }
         if ($route = $this->route(...$lot)) {
-            return long($route);
+            return new Link(long($route));
+        }
+        return null;
+    }
+
+    public function links(...$lot) {
+        if ($links = $this->__call(__FUNCTION__, $lot)) {
+            return $links;
+        }
+        if (is_array($links)) {
+            $r = [];
+            foreach ($links as $link) {
+                $r[] = new Link($link);
+            }
+            return $r;
         }
         return null;
     }
@@ -192,6 +208,7 @@ class Page extends File {
     }
 
     public function offsetGet($key): mixed {
+        static $c = [];
         if ($this->_exist()) {
             $prefix = "x\\page\\from\\x\\";
             // Prioritize data from a file…
@@ -208,7 +225,8 @@ class Page extends File {
             if (0 === filesize($path)) {
                 return null;
             }
-            $content = ("" !== ($content = rtrim(file_get_contents($path))) ? $content : null);
+            $content = $c[$path] ?? ($c[$path] = rtrim(file_get_contents($path)));
+            $content = "" !== $content ? $content : null;
             if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? call_user_func($task, $content) : From::page($content, true))) {
                 $lot = ['content' => $content];
             }
@@ -222,6 +240,11 @@ class Page extends File {
             $this->lot[$key] = $value;
             // Clear cache so that hook(s) can be executed again!
             unset($this->c[$key]);
+            foreach ($this->c as $k => $v) {
+                if (0 === strpos($k, $key . D)) {
+                    unset($this->c[$k]);
+                }
+            }
         } else {
             $this->lot[] = $value;
         }
@@ -229,6 +252,11 @@ class Page extends File {
 
     public function offsetUnset($key): void {
         unset($this->c[$key], $this->lot[$key]);
+        foreach ($this->c as $k => $v) {
+            if (0 === strpos($k, $key . D)) {
+                unset($this->c[$k]);
+            }
+        }
     }
 
     public function parent(array $lot = []) {
