@@ -69,23 +69,23 @@ namespace x\page {
                 $r = \substr($r, 0, -\strlen('/' . $part));
             }
         }
-        $part = ($part ?? 0) - 1;
-        if ($part <= 0 && $route === $path) {
+        $at = ($part ?? 0) - 1;
+        if ($at <= 0 && $route === $path) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
         $y = "" !== $path ? '/' . $path : "";
         if ($file = \exist(\dirname($r) . \D . '{#,}' . \basename($r) . '.{' . x() . '}', 1)) {
-            $page = new \Page($file, ['part' => $part + 1]);
+            $page = new \Page($file);
             $chunk = $page->chunk ?? 5;
             $deep = $page->deep ?? 0;
             $sort = \array_replace([1, 'path'], (array) ($page->sort ?? []));
             \lot('page', $page);
             \lot('t')[] = $page->title;
             \State::set('has', [
-                'pages' => $part < 0 && \q($page->children(x())) > 0,
+                'pages' => $at < 0 && \q($page->children(x())) > 0,
                 'parent' => !!$page->parent
             ]);
-            if ($part >= 0) {
+            if ($at >= 0) {
                 // The “pages” view was disabled by a dot file
                 if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->_x)) {
                     \kick('/' . $path . $query . $hash);
@@ -99,8 +99,8 @@ namespace x\page {
                 $pager->hash = $hash;
                 $pager->path = $path ?: $route;
                 $pager->query = $query;
-                \lot('pager', $pager = $pager->chunk($chunk, $part));
-                \lot('pages', $pages = $pages->chunk($chunk, $part));
+                \lot('pager', $pager = $pager->chunk($chunk, $at));
+                \lot('pages', $pages = $pages->chunk($chunk, $at));
                 if (0 === ($count = \q($pages))) {
                     \lot('t')[] = \i('Error');
                 }

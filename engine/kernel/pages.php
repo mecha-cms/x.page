@@ -164,15 +164,23 @@ class Pages extends Anemone {
                 }
             }
             foreach ($lot as $k => $v) {
-                $page = $this->page($v);
-                $r = ['path' => $page->path];
+                $r = is_array($v) ? $v : [P => $v];
+                $r['path'] = ($page = $this->page($v))->path;
                 if ('path' !== $key[0]) {
                     $v = $page->{f2p($key[0])} ?? $page->{$key[0]} ?? $page[$key[0]] ?? null;
                     if ($deep && (is_array($v) || is_object($v))) {
-                        $r[$key[0]] = get(a($v), $key[1]);
-                    } else {
-                        $r[$key[0]] = $v;
+                        $v = get(a($v), $key[1]);
                     }
+                    if (is_object($v)) {
+                        if ($v instanceof DateTimeInterface) {
+                            $v = $v->getTimestamp();
+                        } else if ($v instanceof Time) {
+                            $v = strtotime($v . "");
+                        } else if (method_exists($v, '__toString')) {
+                            $v = $v->__toString();
+                        }
+                    }
+                    $r[$key[0]] = is_string($v) ? strip_tags($v) : $v;
                 }
                 $lot[$k] = $r;
             }
