@@ -30,28 +30,23 @@ class Pages extends Anemone {
 
     public function __serialize(): array {
         $lot = parent::__serialize();
-        unset($lot['parent']);
-        if ($it = $lot['lot'] ?? 0) {
-            if (is_object($it) && !($it instanceof ArrayAccess)) {
-                $it = y($it);
-            }
-            foreach ($it as $k => $v) {
-                $v = $v['path'] ?? $v;
-                if (is_array($v)) {
+        if ($values = $lot['lot'] ?? 0) {
+            foreach ($values as $k => $v) {
+                if (is_array($v = $v['path'] ?? $v)) {
                     foreach ($v as $kk => $vv) {
                         if (!is_string($vv) || 0 !== strpos($vv, PATH . D)) {
                             continue;
                         }
-                        $it[$k][$kk] = '.' . strtr(substr($vv, strlen(PATH)), [D => "\\"]);
+                        $values[$k][$kk] = '.' . strtr(substr($vv, strlen(PATH)), [D => "\\"]);
                     }
                     continue;
                 }
                 if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
                     continue;
                 }
-                $it[$k] = '.' . strtr(substr($v, strlen(PATH)), [D => "\\"]);
+                $values[$k] = '.' . strtr(substr($v, strlen(PATH)), [D => "\\"]);
             }
-            $lot['lot'] = $it;
+            $lot['lot'] = $values;
         }
         return $lot;
     }
@@ -61,13 +56,9 @@ class Pages extends Anemone {
     }
 
     public function __unserialize(array $lot): void {
-        if ($it = $lot['lot'] ?? 0) {
-            if (is_object($it) && !($it instanceof ArrayAccess)) {
-                $it = y($it);
-            }
-            foreach ($it as $k => $v) {
-                $v = $v['path'] ?? $v;
-                if (is_array($v)) {
+        if ($values = $lot['lot'] ?? 0) {
+            foreach ($values as $k => $v) {
+                if (is_array($v = $v['path'] ?? $v)) {
                     foreach ($v as $kk => $vv) {
                         if (!is_string($vv) || 0 !== strpos($vv, ".\\")) {
                             continue;
@@ -79,9 +70,9 @@ class Pages extends Anemone {
                 if (!is_string($v) || 0 !== strpos($v, ".\\")) {
                     continue;
                 }
-                $it[$k] = PATH . strtr(substr($v, 1), ["\\" => D]);
+                $values[$k] = PATH . strtr(substr($v, 1), ["\\" => D]);
             }
-            $lot['lot'] = $it;
+            $lot['lot'] = $values;
         }
         parent::__unserialize($lot);
     }
@@ -155,45 +146,39 @@ class Pages extends Anemone {
     public function pluck(string $key, $value = null) {
         $deep = false !== strpos(strtr($key, ["\\." => P]), '.');
         return $this->map(function ($v) use ($deep, $key, $value) {
-            return $deep && is_iterable($v) ? (get($v, $key) ?? $value) : ($v->{f2p($key)} ?? $v[$key] ?? $value);
+            return $deep && is_array($v) ? (get($v, $key) ?? $value) : ($v->{f2p($key)} ?? $v->{$key} ?? $v[$key] ?? $value);
         });
     }
 
-    public function rank(callable $at, $keys = false) {
-        return parent::rank(cue(function ($v, $k) use ($at) {
-            return fire($at, [$this->page($v), $k], $this);
-        }, $this), $keys);
-    }
-
     public function sort($sort = 1, $keys = false) {
-        $k = -1;
-        $lot = $keys ? new ArrayIterator : new SplFixedArray($this->count());
-        $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
-        // Make sure the sort key is safe and don’t let user(s) put in key(s) like `__construct`
-        if (0 === strpos($sort[1], '__')) {
-            return $this;
-        }
-        $deep = false !== strpos(strtr($sort[1], ["\\." => P]), '.');
-        foreach ($this->lot as $key => $v) {
-            $r = $this->page($v);
-            $value = is_array($v) ? $v : [];
-            $value['path'] = $r->path;
-            if ('path' !== $sort[1]) {
-                $r = $deep ? (get($r, $sort[1]) ?? $sort[2]) : ($r->{f2p($sort[1])} ?? $r[$sort[1]] ?? $sort[2]);
-                $r = is_object($r) && method_exists($r, '__toString') ? $r->__toString() : $r;
-                $value[$sort[1]] = is_string($r) ? trim(strip_tags($r)) : $r; // Ignore HTML tag(s)
+        if (count($lot = $this->lot) > 1) {
+            $sort = is_array($sort) ? array_replace([1, 'path', null], $sort) : (is_callable($sort) ? $sort : [$sort, 'path', null]);
+            if ($deep = is_string($sort[1]) && false !== strpos($v = strtr($sort[1], ["\\." => P]), '.')) {
+                $key = explode('.', $v, 2);
+                $key[0] = strtr($key[0], [P => "\\."]);
+                $key[1] = strtr($key[1], [P => "\\."]);
+            } else {
+                // Don’t let user(s) put in key(s) like `__construct`
+                if (0 === strpos($key[0] = $sort[1], '__')) {
+                    return $this;
+                }
             }
-            $lot[$keys ? $key : ++$k] = $value;
-            unset($r, $v);
+            foreach ($lot as $k => $v) {
+                $page = $this->page($v);
+                $r = ['path' => $page->path];
+                if ('path' !== $key[0]) {
+                    $v = $page->{f2p($key[0])} ?? $page->{$key[0]} ?? $page[$key[0]] ?? null;
+                    if ($deep && (is_array($v) || is_object($v))) {
+                        $r[$key[0]] = get(a($v), $key[1]);
+                    } else {
+                        $r[$key[0]] = $v;
+                    }
+                }
+                $lot[$k] = $r;
+            }
+            $this->lot = $lot;
         }
-        $this->lot = $lot;
         return parent::sort($sort, $keys);
-    }
-
-    public function vote(callable $at, $keys = false) {
-        return parent::vote(cue(function ($v, $k) use ($at) {
-            return fire($at, [$this->page($v), $k], $this);
-        }, $this), $keys);
     }
 
     public static function from(...$lot) {
@@ -206,17 +191,16 @@ class Pages extends Anemone {
         $lot = array_replace([LOT . D . 'page', x\page\x(), 0], $lot);
         $lot[0] = path($lot[0]);
         $lot[3] = false;
-        $that = new static;
-        $that->lot = new CallbackFilterIterator(g(...$lot), function ($v) {
-            $name = pathinfo($v, PATHINFO_FILENAME);
-            // Ignore dot file(s) such as `.txt` file(s)
-            if ("" === $name) {
-                return false;
+        $pages = [];
+        foreach (g(...$lot) as $v) {
+            $n = pathinfo($v, PATHINFO_FILENAME);
+            // Ignore dot file(s) such as `.txt` file(s), and file(s) with `#` (archive) and `~` (draft) prefix
+            if ("" === $n || '#' === $n[0] || '~' === $n[0]) {
+                continue;
             }
-            // Ignore file(s) with `#` (archive) and `~` (draft) prefix
-            return '#' !== $name[0] && '~' !== $name[0];
-        });
-        return $that;
+            $pages[] = $v;
+        }
+        return new static($pages);
     }
 
 }

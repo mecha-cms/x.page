@@ -13,7 +13,7 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        if (array_key_exists($k = $kin . ($lot ? D . md5(serialize($lot)) : ""), $this->c)) {
+        if (array_key_exists($k = $kin . ($lot ? D . md5(z($lot)) : ""), $this->c)) {
             return $this->c[$k];
         }
         $hooks = [];
@@ -22,7 +22,7 @@ class Page extends File {
         }
         $v = Hook::fire($hooks, [$this->offsetGet($kin), $lot], $this);
         if ($lot && is_callable($v) && !is_string($v)) {
-            $v = call_user_func($v, ...$lot);
+            $v = $v(...$lot);
         }
         return ($this->c[$k] = $v);
     }
@@ -63,7 +63,7 @@ class Page extends File {
 
     public function __toString(): string {
         if (function_exists($task = "x\\page\\to\\x\\" . ($this->_x() ?? 'txt'))) {
-            return call_user_func($task, y($this->getIterator()));
+            return $task(y($this->getIterator()));
         }
         return To::page(y($this->getIterator()), 2);
     }
@@ -132,13 +132,13 @@ class Page extends File {
             $prefix = "x\\page\\from\\x\\";
             if (function_exists($task = $prefix . ($this->_x() ?? 'txt'))) {
                 // Read page data from content…
-                foreach (call_user_func($task, file_get_contents($path = $this->path)) as $k => $v) {
+                foreach ($task(file_get_contents($path = $this->path)) as $k => $v) {
                     $c[$k] = 1;
                     // Prioritize data from a file…
                     if ($f = exist(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.{' . x\page\x() . '}', 1)) {
                         $v = 0 === filesize($f) ? null : ("" !== ($v = rtrim(file_get_contents($v))) ? $v : null);
                         if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                            yield $k => call_user_func($task, $v) ?? $v;
+                            yield $k => $task($v) ?? $v;
                         } else {
                             yield $k => $v;
                         }
@@ -152,7 +152,7 @@ class Page extends File {
                     $c[$kk] = 1;
                     $v = 0 === filesize($k) ? null : ("" !== ($v = rtrim(file_get_contents($k))) ? $v : null);
                     if (function_exists($task = $prefix . ($x = pathinfo($k, PATHINFO_EXTENSION)))) {
-                        yield $kk => call_user_func($task, $v) ?? $v;
+                        yield $kk => $task($v) ?? $v;
                     } else {
                         yield $kk => $v;
                     }
@@ -218,7 +218,7 @@ class Page extends File {
                 }
                 $v = ("" !== ($v = rtrim(file_get_contents($f)))) ? $v : null;
                 if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                    return ($this->lot[$key] = call_user_func($task, $v) ?? $v);
+                    return ($this->lot[$key] = $task($v) ?? $v);
                 }
                 return $v;
             }
@@ -227,7 +227,7 @@ class Page extends File {
             }
             $content = $c[$path] ?? ($c[$path] = rtrim(file_get_contents($path)));
             $content = "" !== $content ? $content : null;
-            if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? call_user_func($task, $content) : From::page($content, true))) {
+            if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? $task($content) : From::page($content, true))) {
                 $lot = ['content' => $content];
             }
             $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);

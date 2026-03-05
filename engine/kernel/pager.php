@@ -2,26 +2,28 @@
 
 class Pager extends Pages {
 
+    public $at;
     public $chunk;
-    public $part;
     public $r;
+
+    public $total = 0;
 
     public function __construct(iterable $lot = [], string $join = ', ') {
         $i = 0;
-        $page = $this->page();
-        $r = new SplFixedArray(q($lot));
+        $page = get_class($this->page());
+        $r = [];
         foreach ($lot as $v) {
-            if (is_object($v) && is_a($v, get_class($page))) {
-                $r[$i++] = $v->path;
-            } else if ($v && is_string($v) && is_file($v)) {
-                $r[$i++] = stream_resolve_include_path($v);
-            } else if (is_array($v)) {
-                $r[$i++] = $v['path'] ?? $v;
+            if (is_array($v)) {
+                $r[] = $v['path'] ?? $v;
+            } else if (is_string($v) && is_file($v)) {
+                $r[] = stream_resolve_include_path($v);
+            } else if (is_object($v) && is_a($v, $page)) {
+                $r[] = $v->path;
             }
+            ++$this->total;
         }
-        unset($lot);
+        $this->at = 0;
         $this->chunk = 5;
-        $this->part = 0;
         $this->r = new Link(long('/'));
         parent::__construct($r, $join);
     }
@@ -48,74 +50,54 @@ class Pager extends Pages {
         }
     }
 
-    public function chunk(int $chunk = 5, int $part = -1, $keys = false) {
-        $that = parent::chunk($chunk, $part, $keys);
+    public function chunk(int $chunk = 5, int $at = -1, $keys = false) {
+        $that = parent::chunk($chunk, $at, $keys);
+        $that->at = $at;
         $that->chunk = $chunk;
-        $that->part = $part;
+        $that->r = $this->r;
         return $that;
     }
 
-    public function current($take = false) {
+    public function current() {
         if (!$this->count()) {
             return null;
         }
-        $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        if ($take) {
-            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
-            $lot = array_diff_key($lot, array_fill($chunk * $part, $chunk, null));
-            $this->lot = SplFixedArray::fromArray($lot, false);
-            if (!$lot) {
-                return null;
-            }
-        }
+        $at = $this->at;
         return $this->page([
             'current' => true,
             'description' => i('You are here'),
-            'link' => $this->to($part + 1),
-            'part' => $part + 1,
+            'link' => $this->to($current = $at + 1),
+            'part' => $current,
             'title' => i('Current')
         ]);
     }
 
-    public function data(): Traversable {
+    public function data() {
+        $at = $this->at;
         $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        if ($count = ceil(count($parent ? $parent->lot : $this->lot) / $chunk)) {
-            $r = new SplFixedArray($count);
-            for ($i = 0; $i < $count; ++$i) {
+        $total = $this->total;
+        $r = [];
+        if ($max = ceil($total / $chunk)) {
+            for ($i = 0; $i < $max; ++$i) {
                 $r[$i] = $this->page([
-                    'current' => $i === $part,
+                    'current' => $i === $at,
                     'description' => i('Go to page %d', $i + 1),
                     'link' => $this->to($i + 1),
                     'part' => $i + 1,
                     'title' => i('Page %d', $i + 1)
                 ]);
             }
-            return new Anemone($r);
         }
-        return new Anemone;
+        return new Anemone($r);
     }
 
-    public function first($take = false) {
+    public function first(...$lot) {
         if (!$this->count()) {
             return null;
         }
-        $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        if ($take) {
-            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
-            $lot = array_slice($lot, $chunk);
-            $this->lot = SplFixedArray::fromArray($lot, false);
-            if (!$lot) {
-                return null;
-            }
-        }
+        $at = $this->at;
         return $this->page([
-            'current' => ($first = 1) === $part + 1,
+            'current' => $at + 1 === ($first = 1),
             'description' => i('Go to the %s page', 'first'),
             'link' => $this->to($first),
             'part' => $first,
@@ -123,23 +105,15 @@ class Pager extends Pages {
         ]);
     }
 
-    public function last($take = false) {
-        if (!$this->lot) {
+    public function last(...$lot) {
+        if (!$this->count()) {
             return null;
         }
+        $at = $this->at;
         $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        $count = count($lot = $parent ? $parent->lot : $this->lot);
-        if ($take) {
-            $lot = array_slice($lot->toArray(), 0, -($count % $chunk));
-            $this->lot = SplFixedArray::fromArray($lot, false);
-            if (!$lot) {
-                return null;
-            }
-        }
+        $total = $this->total;
         return $this->page([
-            'current' => $part + 1 === ($last = ceil($count / $chunk)),
+            'current' => $at + 1 === ($last = ceil($total / $chunk)),
             'description' => i('Go to the %s page', 'last'),
             'link' => $this->to($last),
             'part' => $last,
@@ -147,59 +121,33 @@ class Pager extends Pages {
         ]);
     }
 
-    public function mitose() {
-        $that = parent::mitose();
-        foreach (['chunk', 'part', 'r'] as $k) {
-            $that->{$k} = $this->{$k};
-        }
-        return $that;
-    }
-
-    public function next($take = false) {
+    public function next() {
+        $at = $this->at;
         $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        $count = count($lot = $parent ? $parent->lot : $this->lot);
-        if ($part >= ceil($count / $chunk) - 1) {
+        $total = $this->total;
+        if ($at >= ceil($total / $chunk) - 1) {
             return null;
-        }
-        if ($take) {
-            $lot = $lot->toArray();
-            $lot = array_diff_key($lot, array_fill($chunk * ($part + 1), $chunk, null));
-            $this->lot = SplFixedArray::fromArray($lot, false);
-            if (!$lot) {
-                return null;
-            }
         }
         return $this->page([
             'current' => false,
             'description' => i('Go to the %s page', 'next'),
-            'link' => $this->to($part + 2),
-            'part' => $part + 2,
+            'link' => $this->to($next = $at + 2),
+            'part' => $next,
             'title' => i('Next')
         ]);
     }
 
-    public function prev($take = false) {
+    public function prev() {
+        $at = $this->at;
         $chunk = $this->chunk;
-        $parent = $this->parent;
-        $part = $this->part;
-        if ($part < 1) {
+        if ($at < 1) {
             return null;
-        }
-        if ($take) {
-            $lot = ($parent ? $parent->lot : $this->lot)->toArray();
-            $lot = array_diff_key($lot, array_fill($chunk * ($part - 1), $chunk, null));
-            $this->lot = SplFixedArray::fromArray($lot, false);
-            if (!$lot) {
-                return null;
-            }
         }
         return $this->page([
             'current' => false,
             'description' => i('Go to the %s page', 'previous'),
-            'link' => $this->to($part),
-            'part' => $part,
+            'link' => $this->to($prev = $at),
+            'part' => $prev,
             'title' => i('Previous')
         ]);
     }
