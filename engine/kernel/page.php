@@ -49,6 +49,7 @@ class Page extends File {
 
     public function __serialize(): array {
         $lot = parent::__serialize();
+        unset($lot['c'], $lot['h'], $lot['r']);
         if (!empty($lot['lot'])) {
             foreach ($lot['lot'] as &$v) {
                 if (!is_string($v) || 0 !== strpos($v, PATH . D)) {
@@ -58,7 +59,6 @@ class Page extends File {
             }
             unset($v);
         }
-        unset($lot['c'], $lot['h'], $lot['r']);
         return $lot;
     }
 
@@ -166,7 +166,7 @@ class Page extends File {
     }
 
     public function name(...$lot) {
-        if (P !== ($name = $this->lot[__FUNCTION__] ?? P)) {
+        if ($name = $this->__call(__FUNCTION__, $lot)) {
             return $name;
         }
         $name = (string) $this->_name(...$lot);
@@ -197,7 +197,7 @@ class Page extends File {
                 return null;
             }
             $content = "" !== ($content = rtrim(file_get_contents($path))) ? $content : null;
-            if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? $task($content) : From::page($content, true))) {
+            if (null === ($lot = function_exists($task = $prefix . $this->_x()) ? $task($content) : From::page($content, true))) {
                 $lot = ['content' => $content];
             }
             $this->r = ($this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot));
@@ -207,7 +207,7 @@ class Page extends File {
 
     public function offsetSet($key, $value): void {
         if (isset($key)) {
-            $this->lot[$key] = $value;
+            $this->lot[$key] = $this->r[$key] = $value;
             // Clear cache so that hook(s) can be executed again!
             unset($this->c[$key]);
             foreach ($this->c as $k => $v) {
@@ -216,7 +216,7 @@ class Page extends File {
                 }
             }
         } else {
-            $this->lot[] = $value;
+            $this->lot[] = $this->r[] = $value;
         }
     }
 
@@ -260,7 +260,7 @@ class Page extends File {
         return null;
     }
 
-    public function time(?string $format = null) {
+    public function time(?string $pattern = null) {
         $name = (string) $this->name();
         if ($name && '-' !== $name[0] && strspn($name, '-0123456789') === strlen($name)) {
             $d = DateTime::createFromFormat('Y-m-d-H-i-s', $name);
@@ -280,7 +280,7 @@ class Page extends File {
             }
             $t = new Time($t);
         }
-        return $format ? $t($format) : $t;
+        return $pattern ? $t($pattern) : $t;
     }
 
     public function type(...$lot) {
@@ -288,7 +288,7 @@ class Page extends File {
     }
 
     public function x(...$lot) {
-        return $this->lot[__FUNCTION__] ?? $this->_x(...$lot);
+        return $this->__call(__FUNCTION__, $lot) ?? $this->_x(...$lot);
     }
 
     public static function from(...$lot) {
