@@ -5,6 +5,7 @@ class Page extends File {
     protected $c;
     protected $h;
     protected $lot;
+    protected $r;
 
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin)) {
@@ -34,7 +35,7 @@ class Page extends File {
             $path = $lot['path'] ?? null;
         }
         parent::__construct($path);
-        $this->c = [];
+        $this->c = $this->r = [];
         foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
             $this->h[] = $v = c2f($v);
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.lot', true), $lot);
@@ -57,7 +58,7 @@ class Page extends File {
             }
             unset($v);
         }
-        unset($lot['c'], $lot['h']);
+        unset($lot['c'], $lot['h'], $lot['r']);
         return $lot;
     }
 
@@ -208,7 +209,9 @@ class Page extends File {
     }
 
     public function offsetGet($key): mixed {
-        static $c = [];
+        if (array_key_exists($key, $this->r)) {
+            return $this->r[$key];
+        }
         if ($this->_exist()) {
             $prefix = "x\\page\\from\\x\\";
             // Prioritize data from a file…
@@ -217,20 +220,19 @@ class Page extends File {
                     return null;
                 }
                 $v = ("" !== ($v = rtrim(file_get_contents($f)))) ? $v : null;
-                if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                    return ($this->lot[$key] = $task($v) ?? $v);
+                if (function_exists($task = $prefix . pathinfo($f, PATHINFO_EXTENSION))) {
+                    $v = $task($v) ?? $v;
                 }
-                return $v;
+                return ($this->lot[$key] = $this->r[$key] = $v);
             }
             if (0 === filesize($path)) {
                 return null;
             }
-            $content = $c[$path] ?? ($c[$path] = rtrim(file_get_contents($path)));
-            $content = "" !== $content ? $content : null;
+            $content = "" !== ($content = rtrim(file_get_contents($path))) ? $content : null;
             if (null === ($lot = function_exists($task = $prefix . pathinfo($path, PATHINFO_EXTENSION)) ? $task($content) : From::page($content, true))) {
                 $lot = ['content' => $content];
             }
-            $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);
+            $this->r = ($this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot));
         }
         return $this->lot[$key] ?? null;
     }
@@ -251,7 +253,7 @@ class Page extends File {
     }
 
     public function offsetUnset($key): void {
-        unset($this->c[$key], $this->lot[$key]);
+        unset($this->c[$key], $this->lot[$key], $this->r[$key]);
         foreach ($this->c as $k => $v) {
             if (0 === strpos($k, $key . D)) {
                 unset($this->c[$k]);
