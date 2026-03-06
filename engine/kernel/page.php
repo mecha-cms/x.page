@@ -36,7 +36,7 @@ class Page extends File {
         }
         parent::__construct($path);
         $this->c = $this->r = [];
-        foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -1, false)) as $v) {
+        foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -2, false)) as $v) {
             $this->h[] = $v = c2f($v);
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.lot', true), $lot);
         }
@@ -128,45 +128,13 @@ class Page extends File {
     }
 
     public function getIterator(): Traversable {
-        $c = [];
         if ($this->_exist()) {
-            $prefix = "x\\page\\from\\x\\";
-            if (function_exists($task = $prefix . ($this->_x() ?? 'txt'))) {
-                // Read page data from content…
-                foreach ($task(file_get_contents($path = $this->path)) as $k => $v) {
-                    $c[$k] = 1;
-                    // Prioritize data from a file…
-                    if ($f = exist(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $k . '.{' . x\page\x() . '}', 1)) {
-                        $v = 0 === filesize($f) ? null : ("" !== ($v = rtrim(file_get_contents($v))) ? $v : null);
-                        if (function_exists($task = $prefix . ($x = pathinfo($f, PATHINFO_EXTENSION)))) {
-                            yield $k => $task($v) ?? $v;
-                        } else {
-                            yield $k => $v;
-                        }
-                    }
-                }
-                // Read the rest of page data from a file…
-                foreach (g(dirname($path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+', x\page\x()) as $k => $v) {
-                    if (isset($c[$kk = pathinfo($k, PATHINFO_FILENAME)])) {
-                        continue; // Has been read, skip!
-                    }
-                    $c[$kk] = 1;
-                    $v = 0 === filesize($k) ? null : ("" !== ($v = rtrim(file_get_contents($k))) ? $v : null);
-                    if (function_exists($task = $prefix . ($x = pathinfo($k, PATHINFO_EXTENSION)))) {
-                        yield $kk => $task($v) ?? $v;
-                    } else {
-                        yield $kk => $v;
-                    }
-                }
+            $this->offsetGet("");
+            foreach (g(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+', x\page\x()) as $k => $v) {
+                $this->offsetGet($k);
             }
         }
-        // Read page data from the default value(s)…
-        foreach ((array) ($this->lot ?? []) as $k => $v) {
-            if (isset($c[$k])) {
-                continue; // Has been read, skip!
-            }
-            yield $k => $v;
-        }
+        return new ArrayIterator($this->r);
     }
 
     public function jsonSerialize(): mixed {
@@ -215,12 +183,12 @@ class Page extends File {
         if ($this->_exist()) {
             $prefix = "x\\page\\from\\x\\";
             // Prioritize data from a file…
-            if ($f = exist(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $key . '.{' . x\page\x() . '}', 1)) {
-                if (0 === filesize($f)) {
+            if ($k = exist(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $key . '.{' . x\page\x() . '}', 1)) {
+                if (0 === filesize($k)) {
                     return null;
                 }
-                $v = ("" !== ($v = rtrim(file_get_contents($f)))) ? $v : null;
-                if (function_exists($task = $prefix . pathinfo($f, PATHINFO_EXTENSION))) {
+                $v = ("" !== ($v = rtrim(file_get_contents($k)))) ? $v : null;
+                if (function_exists($task = $prefix . pathinfo($k, PATHINFO_EXTENSION))) {
                     $v = $task($v) ?? $v;
                 }
                 return ($this->lot[$key] = $this->r[$key] = $v);
