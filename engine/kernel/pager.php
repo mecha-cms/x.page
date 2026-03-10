@@ -3,10 +3,7 @@
 class Pager extends Pages {
 
     public $at;
-    public $chunk;
     public $r;
-
-    public $total = 0;
 
     public function __construct(iterable $lot = [], string $join = ', ') {
         $i = 0;
@@ -20,10 +17,8 @@ class Pager extends Pages {
             } else if (is_object($v) && is_a($v, $page)) {
                 $r[] = $v->path;
             }
-            ++$this->total;
         }
         $this->at = 0;
-        $this->chunk = 5;
         $this->r = new Link(long('/'));
         parent::__construct($r, $join);
     }
@@ -53,7 +48,6 @@ class Pager extends Pages {
     public function chunk(int $chunk = 5, int $at = -1, $keys = false) {
         $that = parent::chunk($chunk, $at, $keys);
         $that->at = $at;
-        $that->chunk = $chunk;
         $that->r = $this->r;
         return $that;
     }
@@ -74,10 +68,10 @@ class Pager extends Pages {
 
     public function data() {
         $at = $this->at;
-        $chunk = $this->chunk;
-        $total = $this->total;
+        $max = $this->max;
+        $step = $this->step;
         $r = [];
-        if ($max = ceil($total / $chunk)) {
+        if ($max = ceil($max / $step)) {
             for ($i = 0; $i < $max; ++$i) {
                 $r[$i] = $this->page([
                     'current' => $i === $at,
@@ -88,10 +82,10 @@ class Pager extends Pages {
                 ]);
             }
         }
-        return new Anemone($r);
+        return new Pages($r);
     }
 
-    public function first(...$lot) {
+    public function first() {
         if (!$this->count()) {
             return null;
         }
@@ -105,15 +99,15 @@ class Pager extends Pages {
         ]);
     }
 
-    public function last(...$lot) {
+    public function last() {
         if (!$this->count()) {
             return null;
         }
         $at = $this->at;
-        $chunk = $this->chunk;
-        $total = $this->total;
+        $max = $this->max;
+        $step = $this->step;
         return $this->page([
-            'current' => $at + 1 === ($last = ceil($total / $chunk)),
+            'current' => $at + 1 === ($last = ceil($max / $step)),
             'description' => i('Go to the %s page', 'last'),
             'link' => $this->to($last),
             'part' => $last,
@@ -123,9 +117,9 @@ class Pager extends Pages {
 
     public function next() {
         $at = $this->at;
-        $chunk = $this->chunk;
-        $total = $this->total;
-        if ($at >= ceil($total / $chunk) - 1) {
+        $max = $this->max;
+        $step = $this->step;
+        if ($at >= ceil($max / $step) - 1) {
             return null;
         }
         return $this->page([
@@ -139,7 +133,6 @@ class Pager extends Pages {
 
     public function prev() {
         $at = $this->at;
-        $chunk = $this->chunk;
         if ($at < 1) {
             return null;
         }

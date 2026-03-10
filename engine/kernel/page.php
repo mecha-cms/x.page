@@ -153,7 +153,7 @@ class Page extends File {
 
     public function links(...$lot) {
         if ($links = $this->__call(__FUNCTION__, $lot)) {
-            return $links;
+            return (array) $links;
         }
         if (is_array($links)) {
             $r = [];

@@ -87,11 +87,8 @@ class Pages extends Anemone {
         }, $this));
     }
 
-    public function first($take = false) {
-        if (null !== ($v = parent::first($take))) {
-            return $this->page($v);
-        }
-        return $v;
+    public function first() {
+        return null !== ($v = parent::first()) ? $this->page($v) : $v;
     }
 
     public function getIterator(): Traversable {
@@ -110,11 +107,8 @@ class Pages extends Anemone {
         return $this->__serialize()['lot'] ?? [];
     }
 
-    public function last($take = false) {
-        if (null !== ($v = parent::last($take))) {
-            return $this->page($v);
-        }
-        return $v;
+    public function last() {
+        return null !== ($v = parent::last()) ? $this->page($v) : $v;
     }
 
     public function map(callable $at) {
@@ -148,6 +142,14 @@ class Pages extends Anemone {
         return $this->map(function ($v) use ($deep, $key, $value) {
             return $deep && is_array($v) ? (get($v, $key) ?? $value) : ($v->{f2p($key)} ?? $v->{$key} ?? $v[$key] ?? $value);
         });
+    }
+
+    public function pop($keys = false) {
+        return null !== ($v = parent::pop($keys)) ? $this->page($v) : $v;
+    }
+
+    public function shift($keys = false) {
+        return null !== ($v = parent::shift($keys)) ? $this->page($v) : $v;
     }
 
     public function sort($sort = 1, $keys = false) {
