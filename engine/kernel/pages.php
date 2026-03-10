@@ -5,7 +5,7 @@ class Pages extends Anemone {
     protected $data = [];
 
     public function __get(string $key): mixed {
-        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
+        if (parent::_hasOwnMethod($key, $this)) {
             return $this->{$key}();
         }
         if (parent::_($key)) {
@@ -19,13 +19,10 @@ class Pages extends Anemone {
     }
 
     public function __set(string $key, $value): void {
-        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
-            // Skip!
-        } else if (parent::_($key)) {
-            // Skip!
-        } else {
-            $this->data[$key] = $value;
+        if (parent::_hasOwnMethod($key, $this) || parent::_hasOwnProperty($key, $this) || parent::_($key)) {
+            return;
         }
+        $this->data[$key] = $value;
     }
 
     public function __serialize(): array {
@@ -63,7 +60,7 @@ class Pages extends Anemone {
                         if (!is_string($vv) || 0 !== strpos($vv, ".\\")) {
                             continue;
                         }
-                        $it[$k][$kk] = PATH . strtr(substr($vv, 1), ["\\" => D]);
+                        $values[$k][$kk] = PATH . strtr(substr($vv, 1), ["\\" => D]);
                     }
                     continue;
                 }
@@ -131,8 +128,11 @@ class Pages extends Anemone {
     }
 
     public function page(...$lot) {
-        if ($lot && ($v = reset($lot)) instanceof Page) {
+        if (($v = reset($lot)) && $v instanceof Page) {
             return $v;
+        }
+        if (is_array($v) && isset($v["\0"])) {
+            return $v["\0"];
         }
         return new Page(...$lot);
     }
@@ -167,7 +167,8 @@ class Pages extends Anemone {
             }
             foreach ($lot as $k => $v) {
                 $r = is_array($v) ? $v : [P => $v];
-                $r['path'] = ($page = $this->page($v))->path;
+                $r["\0"] = ($page = $this->page($v));
+                $r['path'] = $page->path;
                 if ('path' !== $key[0]) {
                     $v = $page->{f2p($key[0])} ?? $page->{$key[0]} ?? $page[$key[0]] ?? null;
                     if ($deep && (is_array($v) || is_object($v))) {
@@ -189,6 +190,20 @@ class Pages extends Anemone {
             $this->lot = $lot;
         }
         return parent::sort($sort, $keys);
+    }
+
+    public function with($key, $value = null) {
+        if (!$this->lot) {
+            return $this;
+        }
+        $lot =& $this->lot;
+        foreach ($lot as &$v) {
+            if (is_string($v)) {
+                $v = ['path' => $v];
+            }
+        }
+        unset($lot, $v);
+        return parent::with($key, $value);
     }
 
     public static function from(...$lot) {

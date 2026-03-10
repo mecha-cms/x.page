@@ -24,7 +24,7 @@ class Pager extends Pages {
     }
 
     public function __get(string $key): mixed {
-        if (method_exists($this, $key) && (new ReflectionMethod($this, $key))->isPublic()) {
+        if (parent::_hasOwnMethod($key, $this)) {
             return $this->{$key}();
         }
         if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {

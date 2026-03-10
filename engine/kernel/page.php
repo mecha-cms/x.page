@@ -22,7 +22,7 @@ class Page extends File {
             $hooks[] = $h . '.' . $kin;
         }
         $v = Hook::fire($hooks, [$this->offsetGet($kin), $lot], $this);
-        if ($lot && is_callable($v) && !is_string($v)) {
+        if ($lot && !is_string($v) && is_callable($v)) {
             $v = $v(...$lot);
         }
         return ($this->c[$k] = $v);
@@ -36,7 +36,7 @@ class Page extends File {
         }
         parent::__construct($path);
         $this->c = $this->r = [];
-        foreach (array_merge([$n = static::class], array_slice(class_parents($n), 0, -2, false)) as $v) {
+        foreach (array_slice(parent::_chains(static::class), 0, -1) as $v) {
             $this->h[] = $v = c2f($v);
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.lot', true), $lot);
         }
