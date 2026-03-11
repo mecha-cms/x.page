@@ -2,8 +2,8 @@
 
 class Pager extends Pages {
 
-    public $at;
-    public $r;
+    private $at;
+    private $link;
 
     public function __construct(iterable $lot = [], string $join = ', ') {
         $i = 0;
@@ -19,16 +19,16 @@ class Pager extends Pages {
             }
         }
         $this->at = 0;
-        $this->r = new Link(long('/'));
+        $this->link = new Link(long('/'));
         parent::__construct($r, $join);
     }
 
     public function __get(string $key): mixed {
-        if (parent::_hasOwnMethod($key, $this)) {
+        if ($this->callable($key)) {
             return $this->{$key}();
         }
         if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {
-            return $this->r->{$key};
+            return $this->link->{$key};
         }
         return $this->__call($key);
     }
@@ -39,7 +39,7 @@ class Pager extends Pages {
 
     public function __set(string $key, $value): void {
         if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {
-            $this->r->{$key} = $value;
+            $this->link->{$key} = $value;
         } else {
             $this->{$key} = $value;
         }
@@ -48,7 +48,7 @@ class Pager extends Pages {
     public function chunk(int $chunk = 5, int $at = -1, $keys = false) {
         $that = parent::chunk($chunk, $at, $keys);
         $that->at = $at;
-        $that->r = $this->r;
+        $that->link = $this->link;
         return $that;
     }
 

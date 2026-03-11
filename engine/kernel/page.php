@@ -2,10 +2,7 @@
 
 class Page extends File {
 
-    protected $c;
-    protected $h;
     protected $lot;
-    protected $r;
 
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin)) {
@@ -14,18 +11,18 @@ class Page extends File {
         if (parent::_($kin = p2f($kin))) {
             return parent::__call($kin, $lot);
         }
-        if (array_key_exists($k = $kin . ($lot ? D . md5(z($lot)) : ""), $this->c)) {
-            return $this->c[$k];
+        if (array_key_exists($k = $kin . ($lot ? D . md5(var_export($lot, true)) : ""), $c = static::$c[$id = spl_object_id($this)] ?? [])) {
+            return $c[$k];
         }
         $hooks = [];
-        foreach ($this->h as $h) {
+        foreach (static::$h[$id] ?? [] as $h) {
             $hooks[] = $h . '.' . $kin;
         }
         $v = Hook::fire($hooks, [$this->offsetGet($kin), $lot], $this);
         if ($lot && !is_string($v) && is_callable($v)) {
             $v = $v(...$lot);
         }
-        return ($this->c[$k] = $v);
+        return (static::$c[$id][$k] = $v);
     }
 
     public function __construct($path = null, array $lot = []) {
@@ -35,10 +32,10 @@ class Page extends File {
             $path = $lot['path'] ?? null;
         }
         parent::__construct($path);
-        $this->c = $this->r = [];
-        foreach (array_slice(parent::_chains(static::class), 0, -1) as $v) {
-            $this->h[] = $v = c2f($v);
-            $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . $v . '.lot', true), $lot);
+        static::$c[$id = spl_object_id($this)] = static::$h[$id] = [];
+        foreach (array_slice(parent::_chain(), 0, -1) as $v) {
+            $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . ($h = c2f($v)) . '.lot', true), $lot);
+            static::$h[$id][] = $h;
         }
         unset($this->lot['path']);
     }
@@ -134,7 +131,7 @@ class Page extends File {
                 $this->offsetGet($k);
             }
         }
-        return new ArrayIterator($this->r);
+        return new ArrayIterator($this->lot);
     }
 
     public function jsonSerialize(): mixed {
@@ -177,8 +174,8 @@ class Page extends File {
     }
 
     public function offsetGet($key): mixed {
-        if (array_key_exists($key, $this->r)) {
-            return $this->r[$key];
+        if (array_key_exists($key, $this->lot) && !State::has('x.' . c2f(static::class) . '.lot.' . $key)) {
+            return $this->lot[$key];
         }
         if ($this->_exist()) {
             $prefix = "x\\page\\from\\x\\";
@@ -191,7 +188,7 @@ class Page extends File {
                 if (function_exists($task = $prefix . pathinfo($k, PATHINFO_EXTENSION))) {
                     $v = $task($v) ?? $v;
                 }
-                return ($this->lot[$key] = $this->r[$key] = $v);
+                return ($this->lot[$key] = $v);
             }
             if (0 === filesize($path)) {
                 return null;
@@ -200,31 +197,31 @@ class Page extends File {
             if (null === ($lot = function_exists($task = $prefix . $this->_x()) ? $task($content) : From::page($content, true))) {
                 $lot = ['content' => $content];
             }
-            $this->r = ($this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot));
+            $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);
         }
         return $this->lot[$key] ?? null;
     }
 
     public function offsetSet($key, $value): void {
         if (isset($key)) {
-            $this->lot[$key] = $this->r[$key] = $value;
+            $this->lot[$key] = $value;
             // Clear cache so that hook(s) can be executed again!
-            unset($this->c[$key]);
-            foreach ($this->c as $k => $v) {
+            unset(static::$c[$id = spl_object_id($this)][$key]);
+            foreach (static::$c[$id] ?? [] as $k => $v) {
                 if (0 === strpos($k, $key . D)) {
-                    unset($this->c[$k]);
+                    unset(static::$c[$id][$k]);
                 }
             }
         } else {
-            $this->lot[] = $this->r[] = $value;
+            $this->lot[] = $value;
         }
     }
 
     public function offsetUnset($key): void {
-        unset($this->c[$key], $this->lot[$key], $this->r[$key]);
-        foreach ($this->c as $k => $v) {
+        unset($this->lot[$key], static::$c[$id = spl_object_id($this)][$key]);
+        foreach (static::$c[$id] ?? [] as $k => $v) {
             if (0 === strpos($k, $key . D)) {
-                unset($this->c[$k]);
+                unset(static::$c[$id][$k]);
             }
         }
     }
@@ -290,6 +287,9 @@ class Page extends File {
     public function x(...$lot) {
         return $this->__call(__FUNCTION__, $lot) ?? $this->_x(...$lot);
     }
+
+    protected static $c = [];
+    protected static $h = [];
 
     public static function from(...$lot) {
         return new static(...$lot);

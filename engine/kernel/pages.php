@@ -1,11 +1,11 @@
 <?php
 
-class Pages extends Anemone {
+class Pages extends Batch {
 
     protected $data = [];
 
     public function __get(string $key): mixed {
-        if (parent::_hasOwnMethod($key, $this)) {
+        if ($this->callable($key)) {
             return $this->{$key}();
         }
         if (parent::_($key)) {
@@ -19,7 +19,7 @@ class Pages extends Anemone {
     }
 
     public function __set(string $key, $value): void {
-        if (parent::_hasOwnMethod($key, $this) || parent::_hasOwnProperty($key, $this) || parent::_($key)) {
+        if ($this->callable($key) || $this->readable($key) || parent::_($key)) {
             return;
         }
         $this->data[$key] = $value;
@@ -128,11 +128,12 @@ class Pages extends Anemone {
     }
 
     public function page(...$lot) {
-        if (($v = reset($lot)) && $v instanceof Page) {
+        if (($v = $lot[0] ?? 0) instanceof Page) {
             return $v;
         }
-        if (is_array($v) && isset($v["\0"])) {
-            return $v["\0"];
+        if (is_array($v)) {
+            unset($v[P]);
+            $lot[0] = $v;
         }
         return new Page(...$lot);
     }
@@ -167,8 +168,7 @@ class Pages extends Anemone {
             }
             foreach ($lot as $k => $v) {
                 $r = is_array($v) ? $v : [P => $v];
-                $r["\0"] = ($page = $this->page($v));
-                $r['path'] = $page->path;
+                $r['path'] = ($page = $this->page($v))->path;
                 if ('path' !== $key[0]) {
                     $v = $page->{f2p($key[0])} ?? $page->{$key[0]} ?? $page[$key[0]] ?? null;
                     if ($deep && (is_array($v) || is_object($v))) {
@@ -196,14 +196,22 @@ class Pages extends Anemone {
         if (!$this->lot) {
             return $this;
         }
+        $deep = is_string($key) && false !== strpos(strtr($key, ["\\." => P]), '.');
         $lot =& $this->lot;
-        foreach ($lot as &$v) {
-            if (is_string($v)) {
-                $v = ['path' => $v];
+        if (!is_string($value) && is_callable($value)) {
+            $c = cue($value, $this);
+            foreach ($lot as $k => &$v) {
+                $v = $this->page($v);
+                $deep ? set($v, $key, $c($v, $k)) : ($v[$key] = $c($v, $k));
+            }
+        } else {
+            foreach ($lot as &$v) {
+                $v = $this->page($v);
+                $deep ? set($v, $key, $value) : ($v[$key] = $value);
             }
         }
         unset($lot, $v);
-        return parent::with($key, $value);
+        return $this;
     }
 
     public static function from(...$lot) {
