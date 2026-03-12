@@ -128,14 +128,11 @@ class Pages extends Batch {
     }
 
     public function page(...$lot) {
-        if (($v = $lot[0] ?? 0) instanceof Page) {
-            return $v;
+        static $c = [];
+        if (isset($c[$id = json_encode($lot)])) {
+            return $c[$id];
         }
-        if (is_array($v)) {
-            unset($v[P]);
-            $lot[0] = $v;
-        }
-        return new Page(...$lot);
+        return ($c[$id] = new Page(...$lot));
     }
 
     public function pluck(string $key, $value = null) {
@@ -167,9 +164,9 @@ class Pages extends Batch {
                 }
             }
             foreach ($lot as $k => $v) {
-                $r = is_array($v) ? $v : [P => $v];
-                $r['path'] = ($page = $this->page($v))->path;
+                $r = is_string($v) && is_file($v) ? ['path' => $v] : (array) $v;
                 if ('path' !== $key[0]) {
+                    $page = $this->page($v);
                     $v = $page->{f2p($key[0])} ?? $page->{$key[0]} ?? $page[$key[0]] ?? null;
                     if ($deep && (is_array($v) || is_object($v))) {
                         $v = get(a($v), $key[1]);
@@ -197,18 +194,16 @@ class Pages extends Batch {
             return $this;
         }
         $deep = is_string($key) && false !== strpos(strtr($key, ["\\." => P]), '.');
+        if (!is_callable($value) && null !== $value) {
+            $value = function () use ($value) {
+                return $value;
+            };
+        }
+        $c = cue($value, $this);
         $lot =& $this->lot;
-        if (!is_string($value) && is_callable($value)) {
-            $c = cue($value, $this);
-            foreach ($lot as $k => &$v) {
-                $v = $this->page($v);
-                $deep ? set($v, $key, $c($v, $k)) : ($v[$key] = $c($v, $k));
-            }
-        } else {
-            foreach ($lot as &$v) {
-                $v = $this->page($v);
-                $deep ? set($v, $key, $value) : ($v[$key] = $value);
-            }
+        foreach ($lot as $k => &$v) {
+            $v = is_string($v) && is_file($v) ? ['path' => $v] : (array) $v;
+            $deep ? set($v, $key, $c($this->page($v), $k)) : ($v[$key] = $c($this->page($v), $k));
         }
         unset($lot, $v);
         return $this;
