@@ -26,7 +26,7 @@ class Page extends File {
                 $value = $v;
             }
         }
-        return (static::$c[$id][$k] = $v);
+        return (static::$c[$id][$k] = $value);
     }
 
     public function __construct($path = null, array $lot = []) {
