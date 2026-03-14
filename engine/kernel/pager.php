@@ -116,6 +116,9 @@ class Pager extends Pages {
     }
 
     public function next() {
+        if (!$this->count()) {
+            return null;
+        }
         $at = $this->at;
         $max = $this->max;
         $step = $this->step;
@@ -132,6 +135,9 @@ class Pager extends Pages {
     }
 
     public function prev() {
+        if (!$this->count()) {
+            return null;
+        }
         $at = $this->at;
         if ($at < 1) {
             return null;
