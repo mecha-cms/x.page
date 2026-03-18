@@ -5,7 +5,7 @@ class Pages extends Batch {
     protected $data = [];
 
     public function __get(string $key): mixed {
-        if ($this->callable($key)) {
+        if ($this->__fire__($key)) {
             return $this->{$key}();
         }
         if (parent::_($key)) {
@@ -19,7 +19,7 @@ class Pages extends Batch {
     }
 
     public function __set(string $key, $value): void {
-        if ($this->callable($key) || $this->readable($key) || parent::_($key)) {
+        if ($this->__has__($key) || parent::_($key)) {
             return;
         }
         $this->data[$key] = $value;

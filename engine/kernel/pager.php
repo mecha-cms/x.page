@@ -24,7 +24,7 @@ class Pager extends Pages {
     }
 
     public function __get(string $key): mixed {
-        if ($this->callable($key)) {
+        if ($this->__fire__($key)) {
             return $this->{$key}();
         }
         if (false !== strpos(',base,hash,host,path,port,query,scheme,', ',' . $key . ',')) {

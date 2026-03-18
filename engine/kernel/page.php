@@ -37,7 +37,7 @@ class Page extends File {
         }
         parent::__construct($path);
         static::$c[$id = spl_object_id($this)] = static::$h[$id] = [];
-        foreach (array_slice(parent::_chain(), 0, -1) as $v) {
+        foreach (array_slice(parent::__chain__(), 0, -1) as $v) {
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . ($h = c2f($v)) . '.lot', true), $lot);
             static::$h[$id][] = $h;
         }
