@@ -9,14 +9,14 @@
 
 namespace x\page {
     // Returns the number string at the end of the `$path` as an integer if present, else returns `null`
-    function part($path) {
+    function part(string $path) {
         $part = \trim(\strrchr($path, '/') ?: $path, '/');
         if ("" !== $part && '0' !== $part[0] && \strspn($part, '0123456789') === \strlen($part) && ($part = (int) $part) > 0) {
             return $part;
         }
         return null;
     }
-    function x(array $x = []) {
+    function x(array $x = [], $join = ',') {
         static $r;
         if (null === $r) {
             $prefix = __NAMESPACE__ . "\\to\\x\\";
@@ -24,15 +24,13 @@ namespace x\page {
             $r = [];
             foreach (\get_defined_functions()['user'] as $v) {
                 if (0 === \strpos($v, $prefix)) {
-                    $v = \substr($v, $n);
-                    if (!isset($x[$v]) || $x[$v]) {
-                        $r[$v] = 1;
-                    }
+                    $r[\substr($v, $n)] = 1;
                 }
             }
+            $r = \array_keys(\array_filter(\array_replace($r, $x)));
+            $r && \sort($r);
         }
-        $r && \ksort($r);
-        return \implode(',', \array_keys($r));
+        return false === $join ? $r : \implode($join, $r);
     }
 }
 

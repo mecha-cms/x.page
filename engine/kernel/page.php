@@ -228,14 +228,14 @@ class Page extends File {
         if (!$this->_exist()) {
             return null;
         }
-        if ($v = $this->offsetGet(__FUNCTION__)) {
-            if (is_string($v) && is_file($v)) {
-                return new static($v, $lot);
+        if ($path = $this->offsetGet(__FUNCTION__)) {
+            if (is_string($path) && is_file($path)) {
+                return new static($path, $lot);
             }
             return null;
         }
-        if ($v = exist(dirname($this->path) . '.{' . x\page\x() . '}', 1)) {
-            return new static($v, $lot);
+        if ($path = exist(dirname($this->path) . '.{' . x\page\x() . '}', 1)) {
+            return new static($path, $lot);
         }
         return null;
     }
