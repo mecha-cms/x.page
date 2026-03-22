@@ -4,6 +4,24 @@ class Page extends File {
 
     protected $lot;
 
+    protected function _from($x, $content) {
+        static $c = [];
+        if (isset($c[$x])) {
+            return $c[$x]($content);
+        }
+        $prefix = "x\\page\\from\\x\\";
+        return ($c[$x] = function_exists($task = $prefix . $x) ? $task : $prefix . 'txt')($content);
+    }
+
+    protected function _to($x, $lot) {
+        static $c = [];
+        if (isset($c[$x])) {
+            return $c[$x]($lot);
+        }
+        $prefix = "x\\page\\to\\x\\";
+        return ($c[$x] = function_exists($task = $prefix . $x) ? $task : $prefix . 'txt')($lot);
+    }
+
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin)) {
             return parent::__call($kin, $lot);
@@ -63,10 +81,7 @@ class Page extends File {
     }
 
     public function __toString(): string {
-        if (function_exists($task = "x\\page\\to\\x\\" . ($this->_x() ?? 'txt'))) {
-            return $task(y($this->getIterator()));
-        }
-        return To::page(y($this->getIterator()), 2);
+        return $this->_to($this->_x(), y($this->getIterator()));
     }
 
     public function __unserialize(array $lot): void {
@@ -181,23 +196,20 @@ class Page extends File {
             return $this->lot[$key];
         }
         if ($this->_exist()) {
-            $prefix = "x\\page\\from\\x\\";
             // Prioritize data from a file…
             if ($k = exist(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $key . '.{' . x\page\x() . '}', 1)) {
                 if (0 === filesize($k)) {
                     return null;
                 }
                 $v = ("" !== ($v = rtrim(file_get_contents($k)))) ? $v : null;
-                if (function_exists($task = $prefix . pathinfo($k, PATHINFO_EXTENSION))) {
-                    $v = $task($v) ?? $v;
-                }
+                $v = $this->_from(pathinfo($k, PATHINFO_EXTENSION), $v) ?? $v;
                 return ($this->lot[$key] = $v);
             }
             if (0 === filesize($path)) {
                 return null;
             }
             $content = "" !== ($content = rtrim(file_get_contents($path))) ? $content : null;
-            if (null === ($lot = function_exists($task = $prefix . $this->_x()) ? $task($content) : From::page($content, true))) {
+            if (null === ($lot = $this->_from($this->_x(), $content))) {
                 $lot = ['content' => $content];
             }
             $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);
