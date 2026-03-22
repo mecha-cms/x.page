@@ -45,8 +45,8 @@ class Pager extends Pages {
         }
     }
 
-    public function chunk(int $chunk = 5, int $at = -1, $keys = false) {
-        $that = parent::chunk($chunk, $at, $keys);
+    public function chunk(int $step = 5, int $at = -1, $keys = false) {
+        $that = parent::chunk($step, $at, $keys);
         $that->at = $at;
         $that->link = $this->link;
         return $that;
@@ -68,18 +68,18 @@ class Pager extends Pages {
 
     public function data() {
         $at = $this->at;
-        $max = $this->max;
         $step = $this->step;
+        $total = $this->total;
         $r = [];
-        if ($max = ceil($max / $step)) {
+        if ($max = ceil($total / $step)) {
             for ($i = 0; $i < $max; ++$i) {
-                $r[$i] = $this->page([
+                $r[$i] = [
                     'current' => $i === $at,
                     'description' => i('Go to page %d', $i + 1),
                     'link' => $this->to($i + 1),
                     'part' => $i + 1,
                     'title' => i('Page %d', $i + 1)
-                ]);
+                ];
             }
         }
         return new Pages($r);
@@ -104,10 +104,10 @@ class Pager extends Pages {
             return null;
         }
         $at = $this->at;
-        $max = $this->max;
         $step = $this->step;
+        $total = $this->total;
         return $this->page([
-            'current' => $at + 1 === ($last = ceil($max / $step)),
+            'current' => $at + 1 === ($last = ceil($total / $step)),
             'description' => i('Go to the %s page', 'last'),
             'link' => $this->to($last),
             'part' => $last,
@@ -120,9 +120,9 @@ class Pager extends Pages {
             return null;
         }
         $at = $this->at;
-        $max = $this->max;
         $step = $this->step;
-        if ($at >= ceil($max / $step) - 1) {
+        $total = $this->total;
+        if ($at >= ceil($total / $step) - 1) {
             return null;
         }
         return $this->page([

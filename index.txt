@@ -12,15 +12,102 @@ type: Markdown
 version: 4.0.0
 ...
 
-This extension uses the structure of the page file location in the `.\lot\page` folder to enable the basic functions of
-a web site. This extension also adds some useful properties to the `$site` and `$state` variable.
+This extension uses the page file structure in the `.\lot\page` folder to enable basic web site functions. It also adds
+useful properties to the `$site` and `$state` variables.
 
 ### Page
 
-A page is a plain text file stored in the `.\lot\page` folder. The correct file name format for a page consists of the
-characters `a`, `b`, `c`, `d`, `e`, `f`, `g`, `h`, `i`, `j`, `k`, `l`, `m`, `n`, `o`, `p`, `q`, `r`, `s`, `t`, `u`, `v`,
-`w`, `x`, `y`, `z`, `0`, `1`, `2`, `3`, `4`, `5`, `6`, `7`, `8`, `9`, and `-`. The characters `.` and `_` can also be
-used, but should be used sparingly, as not all GUI applications like to preserve these characters for security reasons:
+A page is a plain text file stored in the `.\lot\page` folder. The core application supports various file extensions,
+each with its own set of writing rules:
+
+#### JSON
+
+The example below should be self-explanatory:
+
+~~~ .json
+{
+  "title": "Page Title",
+  "description": "Page description.",
+  "type": "Markdown",
+  "content": "Page content goes here."
+}
+~~~
+
+#### Markdown
+
+The file extension `*.md` automatically sets the default `type` value to `'Markdown'`, which is different from other
+file extensions where the default `type` value is `'HTML'`:
+
+~~~ .md
+---
+title: Page Title
+description: Page description.
+...
+
+Page content goes here.
+~~~
+
+As you typically do with most static site generator page formatting styles, you can also end your page header with a
+`---`:
+
+~~~ .md
+---
+title: Page Title
+description: Page description.
+---
+
+Page content goes here.
+~~~
+
+#### Text
+
+The `*.txt` file extension follows the same rules as the `*.md` file extension. The only difference is that the default
+`type` value is set to `'HTML'` instead of `'Markdown'`:
+
+~~~ .txt
+---
+title: Page Title
+description: Page description.
+type: Markdown
+...
+
+Page content goes here.
+~~~
+
+~~~ .txt
+---
+title: Page Title
+description: Page description.
+type: Markdown
+---
+
+Page content goes here.
+~~~
+
+#### YAML
+
+The example below should be self-explanatory:
+
+~~~ .yaml
+title: Page Title
+description: Page description.
+type: Markdown
+content: |
+
+  Page content goes here.
+~~~
+
+It also supports a two-document style, in which the second document acts as the `content` value:
+
+~~~ .yaml
+---
+title: Page Title
+description: Page description.
+type: Markdown
+--- |
+
+  Page content goes here.
+~~~
 
 ~~~ .txt
 .\
