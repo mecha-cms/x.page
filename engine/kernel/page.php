@@ -122,13 +122,13 @@ class Page extends File {
             return null;
         }
         $x ??= x\page\x();
-        if ($v = $this->offsetGet(__FUNCTION__)) {
-            if (is_array($v) || (is_string($v) && is_dir($v))) {
-                return Pages::from($v, $x, $deep);
+        if ($path = $this->offsetGet(__FUNCTION__)) {
+            if (is_array($path) || (is_string($path) && is_dir($path))) {
+                return Pages::from($path, $x, $deep);
             }
             return null;
         }
-        if (is_dir($folder = dirname($v = $this->path) . D . pathinfo($v, PATHINFO_FILENAME))) {
+        if (is_dir($folder = dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME))) {
             return Pages::from($folder, $x, $deep);
         }
         return null;
@@ -299,6 +299,13 @@ class Page extends File {
 
     protected static $c = [];
     protected static $h = [];
+
+    public static function __set_state(array $lot): object {
+        if ($path = $lot['path'] ?? null) {
+            unset($lot['path']);
+        }
+        return new static($path, $lot);
+    }
 
     public static function from(...$lot) {
         return new static(...$lot);
