@@ -138,6 +138,17 @@ class Page extends File {
         return $this->__call(__FUNCTION__, $lot);
     }
 
+    public function current(...$lot) {
+        if (null !== ($current = $this->__call(__FUNCTION__, $lot))) {
+            return $current;
+        }
+        if ($route = $this->route(...$lot)) {
+            extract(lot(), EXTR_SKIP);
+            return 0 === strpos('/' . trim($link->path ?? $state->route ?? 'index', '/') . '/', $route . '/');
+        }
+        return false;
+    }
+
     public function exist(...$lot) {
         return $this->lot[__FUNCTION__] ?? $this->_exist(...$lot);
     }
@@ -167,13 +178,19 @@ class Page extends File {
     }
 
     public function links(...$lot) {
-        if ($links = $this->__call(__FUNCTION__, $lot)) {
-            return (array) $links;
-        }
-        if (is_array($links)) {
+        if (is_iterable($links = $this->__call(__FUNCTION__, $lot))) {
             $r = [];
             foreach ($links as $link) {
-                $r[] = new Link($link);
+                if ($link instanceof Stringable) {
+                    $r[] = $link;
+                } else if (is_array($link) && (array_key_exists('link', $link) || array_key_exists('value', $link))) {
+                    if (!array_key_exists('link', $link) && array_key_exists('value', $link)) {
+                        $link['link'] = $link['value'];
+                    }
+                    $r[] = new static($link);
+                } else if (is_string($link)) {
+                    $r[] = new Link(long($link));
+                }
             }
             return $r;
         }
