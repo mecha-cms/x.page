@@ -87,7 +87,7 @@ namespace x\page {
             ]);
             if ($at >= 0) {
                 // The “pages” view was disabled by a dot file
-                if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->_x)) {
+                if (\is_file(\dirname($file) . \D . \pathinfo($file, \PATHINFO_FILENAME) . \D . '.' . $page->file->x)) {
                     \kick('/' . $path . $query . $hash);
                 }
                 if ($pages = $page->children(x(), $deep)) {

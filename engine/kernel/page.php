@@ -22,6 +22,8 @@ class Page extends File {
         return ($c[$x] = function_exists($task = $prefix . $x) ? $task : $prefix . 'txt')($lot);
     }
 
+    public $file;
+
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin)) {
             return parent::__call($kin, $lot);
@@ -60,6 +62,7 @@ class Page extends File {
             static::$h[$id][] = $h;
         }
         unset($this->lot['path']);
+        $this->file = new File($path);
     }
 
     public function __set(string $key, $value): void {
@@ -81,7 +84,7 @@ class Page extends File {
     }
 
     public function __toString(): string {
-        return $this->_to($this->_x(), y($this->getIterator()));
+        return $this->_to($this->file->x(), y($this->getIterator()));
     }
 
     public function __unserialize(array $lot): void {
@@ -101,24 +104,12 @@ class Page extends File {
         $this->offsetUnset(p2f($key));
     }
 
-    public function _exist(...$lot) {
-        return parent::exist(...$lot);
-    }
-
-    public function _name(...$lot) {
-        return parent::name(...$lot);
-    }
-
-    public function _x(...$lot) {
-        return parent::x(...$lot);
-    }
-
     public function ID(...$lot) {
         return $this->__call($k = __FUNCTION__, $lot) ?? $this->__call(strtolower($k), $lot) ?? parent::ID(...$lot);
     }
 
     public function children($x = null, $deep = 0) {
-        if (!$this->_exist()) {
+        if (!$this->file->exist()) {
             return null;
         }
         $x ??= x\page\x();
@@ -150,11 +141,11 @@ class Page extends File {
     }
 
     public function exist(...$lot) {
-        return $this->lot[__FUNCTION__] ?? $this->_exist(...$lot);
+        return $this->lot[__FUNCTION__] ?? $this->file->exist(...$lot);
     }
 
     public function getIterator(): Traversable {
-        if ($this->_exist()) {
+        if ($this->file->exist()) {
             $this->offsetGet("");
             foreach (g(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+', x\page\x()) as $k => $v) {
                 $this->offsetGet($k);
@@ -169,7 +160,7 @@ class Page extends File {
 
     public function link(...$lot) {
         if ($link = $this->__call(__FUNCTION__, $lot)) {
-            return $link;
+            return $link instanceof Link ? $link : new Link(long($link));
         }
         if ($route = $this->route(...$lot)) {
             return new Link(long($route));
@@ -178,21 +169,13 @@ class Page extends File {
     }
 
     public function links(...$lot) {
-        if (is_iterable($links = $this->__call(__FUNCTION__, $lot))) {
-            $r = [];
-            foreach ($links as $link) {
-                if ($link instanceof Stringable) {
-                    $r[] = $link;
-                } else if (is_array($link) && (array_key_exists('link', $link) || array_key_exists('value', $link))) {
-                    if (!array_key_exists('link', $link) && array_key_exists('value', $link)) {
-                        $link['link'] = $link['value'];
-                    }
-                    $r[] = new static($link);
-                } else if (is_string($link)) {
-                    $r[] = new Link(long($link));
+        if (is_array($links = $this->__call(__FUNCTION__, $lot))) {
+            array_walk_recursive($links, function (&$link) {
+                if (is_string($link)) {
+                    $link = new Link(long($link));
                 }
-            }
-            return $r;
+            });
+            return $links;
         }
         return null;
     }
@@ -201,7 +184,7 @@ class Page extends File {
         if ($name = $this->__call(__FUNCTION__, $lot)) {
             return $name;
         }
-        $name = (string) $this->_name(...$lot);
+        $name = (string) $this->file->name(...$lot);
         if ('~' === ($name[0] ?? 0)) {
             return null;
         }
@@ -212,7 +195,7 @@ class Page extends File {
         if (array_key_exists($key, $this->lot) && (!is_array($r = State::get('x.' . c2f(static::class) . '.lot', true)) || !has($r, $key))) {
             return $this->lot[$key];
         }
-        if ($this->_exist()) {
+        if ($this->file->exist()) {
             // Prioritize data from a file…
             if ($k = exist(dirname($path = $this->path) . D . pathinfo($path, PATHINFO_FILENAME) . D . '+' . D . $key . '.{' . x\page\x() . '}', 1)) {
                 if (0 === filesize($k)) {
@@ -226,7 +209,7 @@ class Page extends File {
                 return null;
             }
             $content = "" !== ($content = rtrim(file_get_contents($path))) ? $content : null;
-            if (null === ($lot = $this->_from($this->_x(), $content))) {
+            if (null === ($lot = $this->_from($this->file->x(), $content))) {
                 $lot = ['content' => $content];
             }
             $this->lot = array_replace_recursive($this->lot ?? [], is_string($lot) ? ['content' => $lot] : (array) $lot);
@@ -254,7 +237,7 @@ class Page extends File {
     }
 
     public function parent(array $lot = []) {
-        if (!$this->_exist()) {
+        if (!$this->file->exist()) {
             return null;
         }
         if ($path = $this->offsetGet(__FUNCTION__)) {
@@ -273,7 +256,7 @@ class Page extends File {
         if ($route = $this->__call(__FUNCTION__, $lot)) {
             return '/' . trim(strtr($route, [D => '/']), '/');
         }
-        if ($path = $this->_exist()) {
+        if ($path = $this->file->exist()) {
             if (!is_string($name = $this->name())) {
                 return null;
             }
@@ -311,7 +294,7 @@ class Page extends File {
     }
 
     public function x(...$lot) {
-        return $this->__call(__FUNCTION__, $lot) ?? $this->_x(...$lot);
+        return $this->__call(__FUNCTION__, $lot) ?? $this->file->x(...$lot);
     }
 
     protected static $c = [];
