@@ -22,8 +22,6 @@ class Page extends File {
         return ($c[$x] = function_exists($task = $prefix . $x) ? $task : $prefix . 'txt')($lot);
     }
 
-    public $file;
-
     public function __call(string $kin, array $lot = []) {
         if (parent::_($kin)) {
             return parent::__call($kin, $lot);
@@ -62,7 +60,6 @@ class Page extends File {
             static::$h[$id][] = $h;
         }
         unset($this->lot['path']);
-        $this->file = new File($path);
     }
 
     public function __set(string $key, $value): void {
@@ -142,6 +139,14 @@ class Page extends File {
 
     public function exist(...$lot) {
         return $this->lot[__FUNCTION__] ?? $this->file->exist(...$lot);
+    }
+
+    public function file(...$lot) {
+        static $c = [];
+        if (isset($c[$k = ($path = $this->path) ?? ""])) {
+            return $c[$k];
+        }
+        return ($c[$k] = new File($path));
     }
 
     public function getIterator(): Traversable {

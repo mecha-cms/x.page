@@ -129,10 +129,10 @@ class Pages extends Batch {
 
     public function page(...$lot) {
         static $c = [];
-        if (isset($c[$id = json_encode($lot)])) {
-            return $c[$id];
+        if (isset($c[$k = json_encode($lot)])) {
+            return $c[$k];
         }
-        return ($c[$id] = new Page(...$lot));
+        return ($c[$k] = new Page(...$lot));
     }
 
     public function pluck(string $key, $value = null) {
