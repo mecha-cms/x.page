@@ -70,7 +70,7 @@ namespace x\page {
             }
         }
         $at = ($part ?? 0) - 1;
-        if ($at <= 0 && $route === $path) {
+        if ($at <= 0 && (0 === \strpos($route, '#') && \substr($route, 1) === $path || $route === $path)) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
         $y = "" !== $path ? '/' . $path : "";
