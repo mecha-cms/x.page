@@ -165,7 +165,7 @@ class Page extends File {
 
     public function link(...$lot) {
         if ($link = $this->__call(__FUNCTION__, $lot)) {
-            return $link instanceof Link ? $link : new Link(long($link));
+            return is_string($link) ? new Link(long($link)) : $link;
         }
         if ($route = $this->route(...$lot)) {
             return new Link(long($route));
@@ -194,6 +194,10 @@ class Page extends File {
             return null;
         }
         return '#' === ($name[0] ?? 0) ? substr($name, 1) : $name;
+    }
+
+    public function offsetExists($key): bool {
+        return null !== $this->offsetGet($key);
     }
 
     public function offsetGet($key): mixed {
