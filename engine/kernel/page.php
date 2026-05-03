@@ -270,7 +270,7 @@ class Page extends File {
                 return null;
             }
             $route = trim(strtr(substr(dirname($path) . D, strlen(LOT . D . 'page' . D)), [D => '/']), '/');
-            return '/' . ("" !== $route ? $route . '/' : "") . $name;
+            return '/' . strtr(rawurlencode(("" !== $route ? $route . '/' : "") . $name), ['%2F' => '/']);
         }
         return null;
     }
