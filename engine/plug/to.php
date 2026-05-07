@@ -7,7 +7,7 @@ To::_('description', static function (?string $value, $max = 200): ?string {
     if (is_int($max)) {
         $max = [$max, '&#x2026;'];
     }
-    $m = extension_loaded('mbstring');
+    $m = function_exists('mb_strlen');
     if (false !== strpos($value, '&') || false !== strpos($value, '<')) {
         $c = 0;
         $keep = P . implode(P, ['a', 'abbr', 'b', 'bdi', 'bdo', 'br', 'cite', 'code', 'data', 'del', 'dfn', 'em', 'i', 'ins', 'kbd', 'mark', 'q', 's', 'samp', 'small', 'span', 'strong', 'sub', 'sup', 'time', 'u', 'var', 'wbr']) . P;
@@ -95,8 +95,8 @@ To::_('title', static function (?string $value): ?string {
     if ("" === ($value = w(trim($value ?? "")) ?? "")) {
         return null;
     }
-    $out = extension_loaded('mbstring') ? mb_convert_case($value, MB_CASE_TITLE) : ucwords($value);
+    $r = function_exists('mb_convert_case') ? mb_convert_case($value, MB_CASE_TITLE) : ucwords($value);
     // Convert to abbreviation if all case(s) are in upper
-    $out = u($out) === $out ? strtr($out, [' ' => ""]) : $out;
-    return "" !== $out ? $out : null;
+    $r = u($r) === $r ? strtr($r, [' ' => ""]) : $r;
+    return "" !== $r ? $r : null;
 });
