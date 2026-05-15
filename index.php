@@ -11,8 +11,8 @@ namespace {
     \lot('page', new \Page);
     \lot('pager', new \Pager);
     \lot('pages', new \Pages);
-    $route = \trim($state->route ?? 'index', '/');
-    if ($part = \x\page\part($path = \trim(\rawurldecode($link->path ?? $route), '/'))) {
+    $home = \trim($state->home ?? 'index', '/');
+    if ($part = \x\page\part($path = \trim(\rawurldecode($link->path ?? $home), '/'))) {
         $path = \substr($path, 0, -\strlen('/' . $part));
         if (\exist(\LOT . \D . 'page' . \D . $path . \D . '{#,}' . $part . '.{' . \x\page\x() . '}', 1)) {
             $path .= '/' . $part;
@@ -22,7 +22,7 @@ namespace {
     \State::set([
         'has' => ['part' => isset($part)],
         'is' => [
-            'home' => "" === $path || $route === $path,
+            'home' => "" === $path || $home === $path,
             'page' => !isset($part),
             'pages' => isset($part)
         ]
@@ -56,21 +56,21 @@ namespace x\page {
             ];
         }
         \extract(\lot(), \EXTR_SKIP);
-        $route = \trim($state->route ?? 'index', '/');
-        $r = \LOT . \D . 'page' . \D . \rawurldecode($path ?: $route);
-        if ($part = part($path ?: $route)) {
+        $home = \trim($state->home ?? 'index', '/');
+        $r = \LOT . \D . 'page' . \D . \rawurldecode($path ?: $home);
+        if ($part = part($path ?: $home)) {
+            $home = \substr($home, 0, -\strlen('/' . $part));
             $path = \substr($path, 0, -\strlen('/' . $part));
-            $route = \substr($route, 0, -\strlen('/' . $part));
             if (\exist(\dirname($r) . \D . '{#,}' . \basename($r) . '.{' . x() . '}', 1)) {
+                $home .= '/' . $part;
                 $path .= '/' . $part;
-                $route .= '/' . $part;
                 unset($part);
             } else {
                 $r = \substr($r, 0, -\strlen('/' . $part));
             }
         }
         $at = ($part ?? 0) - 1;
-        if ($at <= 0 && $route === $path) {
+        if ($at <= 0 && $home === $path) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
         $y = "" !== $path ? '/' . $path : "";
@@ -97,7 +97,7 @@ namespace x\page {
                 }
                 $pager = \Pager::from($pages);
                 $pager->hash = $hash;
-                $pager->path = $path ?: $route;
+                $pager->path = $path ?: $home;
                 $pager->query = $query;
                 \lot('pager', $pager = $pager->chunk($chunk, $at));
                 \lot('pages', $pages = $pages->chunk($chunk, $at));

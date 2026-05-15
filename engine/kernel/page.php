@@ -132,7 +132,7 @@ class Page extends File {
         }
         if ($route = $this->route(...$lot)) {
             extract(lot(), EXTR_SKIP);
-            return 0 === strpos('/' . trim($link->path ?? $state->route ?? 'index', '/') . '/', $route . '/');
+            return 0 === strpos('/' . trim($link->path ?? $state->home ?? 'index', '/') . '/', $route . '/');
         }
         return false;
     }
