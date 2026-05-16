@@ -275,7 +275,7 @@ class Page extends File {
         return null;
     }
 
-    public function time(?string $pattern = null) {
+    public function time(?string $pattern = null, ?int $time = null) {
         $name = (string) $this->name();
         if ($name && '-' !== $name[0] && strspn($name, '-0123456789') === strlen($name)) {
             $d = DateTime::createFromFormat('Y-m-d-H-i-s', $name);
@@ -290,7 +290,7 @@ class Page extends File {
         }
         if (!isset($t)) {
             $t = $this->offsetGet(__FUNCTION__) ?? parent::time();
-            if (is_object($t) && $t instanceof DateTimeInterface) {
+            if ($t instanceof DateTimeInterface) {
                 $t = $t->format('Y-m-d H:i:s');
             }
             $t = new Time($t);
