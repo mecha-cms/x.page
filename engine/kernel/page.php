@@ -55,7 +55,7 @@ class Page extends File {
         }
         parent::__construct($path);
         static::$c[$id = spl_object_id($this)] = static::$h[$id] = [];
-        foreach (array_slice(parent::__chain__(), 0, -1) as $v) {
+        foreach (array_slice(parent::c3n(), 0, -1) as $v) {
             $this->lot = array_replace_recursive($this->lot ?? [], (array) State::get('x.' . ($h = c2f($v)) . '.lot', true), $lot);
             static::$h[$id][] = $h;
         }
@@ -175,7 +175,7 @@ class Page extends File {
 
     public function links(...$lot) {
         if (is_array($links = $this->__call(__FUNCTION__, $lot))) {
-            array_walk_recursive($links, function (&$link) {
+            array_walk($links, function (&$link) {
                 if (is_string($link)) {
                     $link = new Link(long($link));
                 }

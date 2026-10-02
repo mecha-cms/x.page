@@ -87,7 +87,7 @@ To::_('page', static function (?array $value, $dent = true): ?string {
     }
     $content = $value['content'] ?? "";
     unset($value['content']);
-    $value = rtrim("---\n" . To::YAML($value, true === $dent ? 4 : (is_int($dent) && $dent > 0 ? $dent : 4)) . "\n...\n\n" . $content, "\n");
+    $value = rtrim("---\n" . To::YAML($value, $dent) . "\n...\n\n" . $content, "\n");
     return "---\n\n..." !== $value ? $value : null;
 });
 

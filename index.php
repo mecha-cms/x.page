@@ -49,11 +49,7 @@ namespace x\page {
         // No part of the path can start with a `#` or `~`
         $test = '/' . \rawurldecode($path = \trim($path ?? "", '/'));
         if (false !== \strpos($test, '/#') || false !== \strpos($test, '/~')) {
-            return [
-                'lot' => [],
-                'status' => 404,
-                'y' => 'page'
-            ];
+            return [404, []];
         }
         \extract(\lot(), \EXTR_SKIP);
         $home = \trim($state->home ?? 'index', '/');
@@ -73,7 +69,6 @@ namespace x\page {
         if ($at <= 0 && $home === $path) {
             \kick('/' . $query . $hash); // Redirect to home page
         }
-        $y = "" !== $path ? '/' . $path : "";
         if ($file = \exist(\dirname($r) . \D . '{#,}' . \basename($r) . '.{' . x() . '}', 1)) {
             $page = new \Page($file);
             $chunk = $page->chunk ?? 5;
@@ -112,25 +107,13 @@ namespace x\page {
                     'is' => ['error' => 0 === $count ? 404 : false],
                     'with' => ['pages' => $count > 0]
                 ]);
-                return [
-                    'lot' => [],
-                    'status' => 0 === $count ? 404 : 200,
-                    'y' => 'pages' . $y
-                ];
+                return [0 === $count ? 404 : 200, []];
             }
-            return [
-                'lot' => [],
-                'status' => 200,
-                'y' => 'page' . $y
-            ];
+            return [200, []];
         }
         \lot('t')[] = \i('Error');
         \State::set('is.error', 404);
-        return [
-            'lot' => [],
-            'status' => 404,
-            'y' => 'page' . $y
-        ];
+        return [404, []];
     }
     \Hook::set('route', __NAMESPACE__ . "\\route", 100);
     \Hook::set('route.page', __NAMESPACE__ . "\\route__page", 100);
