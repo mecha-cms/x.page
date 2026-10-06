@@ -53,8 +53,8 @@ namespace x\page {
         }
         \extract(\lot(), \EXTR_SKIP);
         $home = \trim($state->home ?? 'index', '/');
-        $r = \LOT . \D . 'page' . \D . \rawurldecode($path ?: $home);
-        if ($part = part($path ?: $home)) {
+        $r = \LOT . \D . 'page' . \D . ($route = \rawurldecode($path ?: $home));
+        if ($part = part($route)) {
             $home = \substr($home, 0, -\strlen('/' . $part));
             $path = \substr($path, 0, -\strlen('/' . $part));
             if (\exist(\dirname($r) . \D . '{#,}' . \basename($r) . '.{' . x() . '}', 1)) {
