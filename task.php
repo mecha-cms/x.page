@@ -7,7 +7,7 @@ if (version_compare(VERSION, '4.0.0', '<')) {
 if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?? 0)) {
     $style = $r['state']['x'] ?? 'txt';
     if ($keep = !empty($r['state']['keep'])) {
-        foreach ($r['files'][0] as $k => $v) {
+        foreach ($r['files'] as $k => $v) {
             if (!is_file($f = path(LOT . $k))) {
                 throw new RuntimeException('Not a file: `' . $f . '`');
             }
@@ -21,14 +21,15 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             chmod($ff, 0600);
         }
     }
-    foreach ($r['files'][1] as $k => $v) {
+    foreach ($r['files'] as $k => $v) {
         $x = pathinfo($f = path(LOT . $k), PATHINFO_EXTENSION);
         // Convert page’s data
         if ('data' === $x) {
             if (!is_dir($d = dirname($f) . D . '+') && !mkdir($d, 0700, true) && !is_dir($d)) {
                 throw new RuntimeException('Failed to create folder: `' . $d . '`');
             }
-            $ff = $d . D . basename($f, '.' . $x) . '.';
+            $name = basename($f, '.' . $x);
+            $ff = $d . D . ('kind' === $name ? 'tags' : $name) . '.';
             if (0 === filesize($f)) {
                 if (!rename($f, $fff = $ff . 'txt')) {
                     throw new RuntimeException('Failed to move file: `' . $f . '`');
@@ -60,9 +61,14 @@ if ('POST' === $_SERVER['REQUEST_METHOD'] && is_array($r = $_POST['x']['page'] ?
             continue;
         }
         $data = From::page(file_get_contents($f), true);
+        $data_author = $data['author'] ?? "";
         $data_content = $data['content'] ?? "";
         $data_link = $data['link'] ?? "";
         unset($data['content'], $data['link']);
+        if (is_string($data_author) && '@' === ($data_author[0] ?? 0)) {
+            unset($data['author']);
+            $data['user'] = substr($data_author, 1);
+        }
         // <https://github.com/orgs/mecha-cms/discussions/304>
         if (is_string($data_link) && "" !== $data_link) {
             $data['links'] = [$data_link];
@@ -251,9 +257,8 @@ type: Markdown
 Page content goes here.</code></pre>';
 }
 if (($rest = $count - $chunk) > 0) {
-    $s .= '<p>This is a list of the ' . ($rest > $chunk ? 'first ' . $chunk : 'last ' . $rest) . ' file' . (1 === $rest ? "" : 's') . ' found to be converted' . ($rest > $chunk ? '. The remaining <b style="color: #900;">' . $rest . '</b> file' . (1 === $rest ? "" : 's') . ' will be converted in the next batch. As this tool converts your pages, you have time to relax. You can make a coffee, watch TV, etc' : "") . '.</p>';
+    $s .= '<p>This is a list of the ' . ($rest > $chunk ? 'first ' . $chunk : 'last ' . $rest) . ' file' . (1 === $rest ? "" : 's') . ' found to be converted' . ($rest > $chunk ? '. The remaining <b style="color: #900;">' . $rest . '</b> file' . (1 === $rest ? "" : 's') . ' will be converted in the next batch. You can make coffee, watch TV, or just sit back and relax while this tool converts your pages' : "") . '.</p>';
 }
-$s .= '<p><label><input id="toggle-check-all" type="checkbox" checked> Select all</label></p>';
 $s .= '<fieldset style="padding: 1em;">';
 $s .= '<ol style="list-style: none; margin: 0; padding: 0;">';
 foreach ($lot as $k => $v) {
@@ -262,17 +267,13 @@ foreach ($lot as $k => $v) {
     }
     $route = '/' . strtr(substr($k, strlen(LOT . D)), [D => '/']);
     $s .= '<li>';
-    $s .= '<input name="x[page][files][0][' . htmlspecialchars($route) . ']" type="hidden" value="1">';
-    $s .= '<label>';
-    $s .= '<input checked name="x[page][files][1][' . htmlspecialchars($route) . ']" type="checkbox" value="1">';
-    $s .= ' ';
     $s .= '<code>.' . htmlspecialchars(strtr($route, ['/' => "\\"])) . '</code>';
-    $s .= '</label>';
+    $s .= '<input name="x[page][files][' . htmlspecialchars($route) . ']" type="hidden" value="1">';
     $s .= '</li>';
     --$chunk;
 }
 if ($rest > 0) {
-    $s .= '<li><label><input style="visibility: hidden;" type="checkbox"> <code>&hellip;</code></label></li>';
+    $s .= '<li><code>&hellip;</code></label></li>';
 }
 $s .= '</ol>';
 $s .= '</fieldset>';
@@ -298,8 +299,6 @@ $s .= '</main>';
 $s .= '<script>';
 $s .= <<<'JS'
 const form = document.forms[0];
-const formChecks = form.querySelectorAll('[name^="x[page][files][1]["]');
-const formChecksAll = form.querySelector('#toggle-check-all');
 form.elements['x[page][state][x]'].addEventListener('change', function () {
     let code = this.parentNode.nextElementSibling.firstChild,
         v = this.value;
@@ -318,26 +317,6 @@ form.elements['x[page][state][x]'].addEventListener('change', function () {
     } else {
         code.textContent = '---\ntitle: Page Title\ndescription: Page description.\ntype: Markdown\n...\n\nPage content goes here.';
     }
-});
-const formChecksTotal = formChecks.length;
-formChecks.forEach(formCheck => {
-    formCheck.addEventListener('change', function () {
-        let formChecksCheckedTotal = [].slice.call(formChecks).filter(v => v.checked).length;
-        console.log({formChecksTotal, formChecksCheckedTotal});
-        if (0 === formChecksCheckedTotal) {
-            formChecksAll.checked = false;
-            formChecksAll.indeterminate = false;
-        } else if (formChecksCheckedTotal === formChecksTotal) {
-            formChecksAll.checked = true;
-            formChecksAll.indeterminate = false;
-        } else {
-            formChecksAll.checked = false;
-            formChecksAll.indeterminate = true;
-        }
-    });
-});
-formChecksAll.addEventListener('change', function () {
-    formChecks.forEach(formCheck => formCheck.checked = this.checked);
 });
 JS;
 if (array_key_exists('next', $_GET)) {
